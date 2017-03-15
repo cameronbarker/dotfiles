@@ -40,6 +40,7 @@ alias hrcl='heroku run --size=performance-l rails c -r heroku'
 alias hlog='heroku logs --ps web -t'
 alias appname="heroku info -r heroku | head -1 | tr -d '=' | tr -d ' '"
 alias gi='git browse -- issues'
+alias rc='rails console'
 
 des() { ~/Desktop ; }
 dess() { git pull origin master ;

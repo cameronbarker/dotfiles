@@ -41,6 +41,7 @@ alias hlog='heroku logs --ps web -t'
 alias appname="heroku info -r heroku | head -1 | tr -d '=' | tr -d ' '"
 alias gi='git browse -- issues'
 alias rc='rails console'
+alias mc="iex -S mix"
 
 des() { ~/Desktop ; }
 dess() { git pull origin master ;

@@ -17,7 +17,7 @@
 # Editor
 # -----------------------------------------------------------------------------
 alias vim='nvim'
-export EDITOR="vim"
+export EDITOR="nvim"
 
 # -----------------------------------------------------------------------------
 # Navigation
@@ -31,6 +31,7 @@ alias -- -='cd -'
 alias c='clear'
 alias cwd='echo -n $PWD | pbcopy && echo "Copied current path to clipboard"'
 alias src='source ~/.zshrc'
+alias esrc='$EDITOR ~/.zshrc'
 
 # -----------------------------------------------------------------------------
 # File listing

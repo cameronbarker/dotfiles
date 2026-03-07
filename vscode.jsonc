@@ -1,0 +1,124 @@
+// =============================================================================
+// VSCode settings.json
+//
+// Installation:
+//   Mac:    cp ~/projects/pb-configs/vscode.jsonc /config/data/User/settings.json
+//   Linux:  cp ~/projects/pb-configs/vscode.jsonc /config/data/User/settings.json
+//
+// Required extensions:
+//   One Dark Pro:  zhuangtongfa.material-theme
+//   Prettier:      esbenp.prettier-vscode
+//   Ruby LSP:      Shopify.ruby-lsp
+//   Rails:         bung87.rails
+// =============================================================================
+{
+  // ---------------------------------------------------------------------------
+  // Theme & appearance
+  // ---------------------------------------------------------------------------
+  "workbench.colorTheme": "One Dark Pro",
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.startupEditor": "none",
+
+  // ---------------------------------------------------------------------------
+  // Font
+  // ---------------------------------------------------------------------------
+  "editor.fontFamily": "MesloLGS NF, Menlo, monospace",
+  "editor.fontSize": 13,
+  "editor.lineHeight": 1.6,
+  "terminal.integrated.fontFamily": "MesloLGS NF",
+  "terminal.integrated.fontSize": 13,
+
+  // ---------------------------------------------------------------------------
+  // Editor
+  // ---------------------------------------------------------------------------
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.rulers": [120],
+  "editor.wordWrap": "off",
+  "editor.minimap.enabled": false,
+  "editor.scrollBeyondLastLine": false,
+  "editor.renderWhitespace": "boundary",
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  // ---------------------------------------------------------------------------
+  // Prettier
+  // ---------------------------------------------------------------------------
+  "prettier.singleQuote": true,
+  "prettier.semi": true,
+  "prettier.trailingComma": "es5",
+  "prettier.printWidth": 120,
+
+  // ---------------------------------------------------------------------------
+  // Ruby / Rails
+  // ---------------------------------------------------------------------------
+  "[ruby]": {
+    "editor.defaultFormatter": "Shopify.ruby-lsp",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  },
+  "rubyLsp.formatter": "rubocop",
+  "rubyLsp.enabledFeatures": {
+    "diagnostics": true,
+    "formatting": true,
+    "hover": true,
+    "inlayHint": true
+  },
+
+  // ---------------------------------------------------------------------------
+  // Files
+  // ---------------------------------------------------------------------------
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/node_modules": true,
+    "**/.bundle": true,
+    "**/tmp": true,
+    "**/log": true
+  },
+
+  // ---------------------------------------------------------------------------
+  // Workbench
+  // ---------------------------------------------------------------------------
+  "workbench.editor.enablePreview": false,
+
+  // ---------------------------------------------------------------------------
+  // Explorer
+  // ---------------------------------------------------------------------------
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+
+  // ---------------------------------------------------------------------------
+  // Terminal
+  // ---------------------------------------------------------------------------
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.defaultProfile.linux": "zsh",
+
+  // ---------------------------------------------------------------------------
+  // Emmet (ERB support)
+  // ---------------------------------------------------------------------------
+  "emmet.includeLanguages": {
+    "erb": "html"
+  },
+
+  // ---------------------------------------------------------------------------
+  // Polish
+  // ---------------------------------------------------------------------------
+  "editor.stickyScroll.enabled": true,
+  "editor.linkedEditing": true,
+  "editor.smoothScrolling": true,
+  "editor.cursorBlinking": "smooth",
+  "editor.cursorSmoothCaretAnimation": "on",
+  "workbench.list.smoothScrolling": true,
+
+  // ---------------------------------------------------------------------------
+  // Git
+  // ---------------------------------------------------------------------------
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  "diffEditor.ignoreTrimWhitespace": false
+}

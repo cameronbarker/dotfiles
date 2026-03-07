@@ -84,15 +84,6 @@
 	insteadOf = gist:
 
 # -----------------------------------------------------------------------------
-# Credentials
-# Uncomment the one that matches your OS:
-# -----------------------------------------------------------------------------
-[credential]
-	helper = libsecret          # Linux (requires: sudo apt install libsecret-tools libsecret-1-dev)
-	# helper = osxkeychain      # macOS
-	# helper = cache            # fallback: stores in memory temporarily
-
-# -----------------------------------------------------------------------------
 # Git LFS
 # -----------------------------------------------------------------------------
 [filter "lfs"]

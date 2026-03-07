@@ -1,81 +1,140 @@
-[alias]
-    addremove = !git r && git add . --all
-    aliases = !git config --list | grep 'alias\\.' | sed 's/alias\\.\\([^=]*\\)=\\(.*\\)/\\1\\ \t => \\2/' | sort
-    all = add . --all
-    amend = !git log -n 1 --pretty=tformat:%s%n%n%b | git commit -F - --amend
-    br = branch -av
-    brname = !git branch | grep "^*" | awk '{ print $2 }'
-    brdel = branch -D
-    ci = commit
-    changes = "!f() { git log --pretty=format:'* %s' $1..$2; }; f"
-    churn = !git log --all -M -C --name-only --format='format:' "$@" | sort | grep -v '^$' | uniq -c | sort | awk 'BEGIN {print "count,file"} {print $1 "," $2}'
-    co = checkout
-    details = log -n1 -p --format=fuller
-    export = archive -o latest.tar.gz -9 --prefix=latest/
-    unstage = reset HEAD --
-    g = !git log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
-    in = pull --dry-run
-    l = "!f() { git log $* | grep '^commit ' | cut -f 2 -d ' '; }; f"
-    out = log --branches --not --remotes
-    r = !git ls-files -z --deleted | xargs -0 git rm
-    root = rev-parse --show-toplevel
-    st = status
-    subup = submodule update --init
-    tags = tag -l
-    this = !git init && git add . && git commit -m \"Initial commit.\"
-    trim = !git reflog expire --expire=now --all && git gc --prune=now
+# =============================================================================
+# .gitconfig — Git config template
+#
+# SETUP
+# -----
+# 1. Copy to home directory:
+#      cp .gitconfig ~/.gitconfig
+#
+# 2. Install credential helper (Linux):
+#      sudo apt install libsecret-tools libsecret-1-dev
+#
+# 3. Update [user] name and email below.
+# =============================================================================
 
-[credential]
-    helper = osxkeychain
+[user]
+	name = Cameron Barker
+	email = barker.cameron@gmail.com
 
+# -----------------------------------------------------------------------------
+# Core
+# -----------------------------------------------------------------------------
+[core]
+	autocrlf = input
+	compression = 9
+	excludesfile = ~/.gitignore_global
+	filemode = false
+	editor = nvim
+
+[init]
+	defaultBranch = main
+
+# -----------------------------------------------------------------------------
+# Behaviour
+# -----------------------------------------------------------------------------
+[push]
+	default = simple
+	autoSetupRemote = true
+
+[pull]
+	rebase = false
+
+[fetch]
+	prune = true
+
+[merge]
+	log = true
+	ff = false
+
+[diff]
+	mnemonicprefix = true
+
+# -----------------------------------------------------------------------------
+# Colour
+# -----------------------------------------------------------------------------
 [color]
 	ui = true
 
 [color "branch"]
-    current = yellow reverse
-    local = yellow
-    remote = green
+	current = yellow reverse
+	local = yellow
+	remote = green
 
 [color "diff"]
-    meta = yellow bold
-    frag = magenta bold
-    old = red bold
-    new = green bold
+	meta = yellow bold
+	frag = magenta bold
+	old = red bold
+	new = green bold
 
 [color "status"]
-    added = yellow
-    changed = green
-    untracked = red
+	added = yellow
+	changed = green
+	untracked = red
 
-[core]
-    autocrlf = input
-    compression = 9
-    excludesfile = ~/.gitignore_global
-    filemode = false
-
-[diff]
-    mnemonicprefix = true
-
-[merge]
-    log = true
-    ff = false
-
-[push]
-    default = simple
+# -----------------------------------------------------------------------------
+# URL shorthands
+# -----------------------------------------------------------------------------
+[url "https://github.com/"]
+	insteadOf = gh:
 
 [url "https://bitbucket.org/"]
-    insteadOf = bb:
-
-[url "https://github.com/"]
-    insteadOf = gh:
+	insteadOf = bb:
 
 [url "https://gist.github.com/"]
-    insteadOf = gist:
+	insteadOf = gist:
 
-[user]
-    name = Cameron Barker
-    email = barker.cameron@gmail.com
+# -----------------------------------------------------------------------------
+# Credentials
+# Uncomment the one that matches your OS:
+# -----------------------------------------------------------------------------
+[credential]
+	helper = libsecret          # Linux (requires: sudo apt install libsecret-tools libsecret-1-dev)
+	# helper = osxkeychain      # macOS
+	# helper = cache            # fallback: stores in memory temporarily
+
+# -----------------------------------------------------------------------------
+# Git LFS
+# -----------------------------------------------------------------------------
 [filter "lfs"]
-	clean = git-lfs clean %f
-	smudge = git-lfs smudge %f
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
 	required = true
+
+# -----------------------------------------------------------------------------
+# Aliases
+# -----------------------------------------------------------------------------
+[alias]
+	# Status / info
+	st = status
+	br = branch -av
+	brname = !git branch | grep "^*" | awk '{ print $2 }'
+	tags = tag -l
+	root = rev-parse --show-toplevel
+	aliases = !git config --list | grep 'alias\\.' | sed 's/alias\\.\\([^=]*\\)=\\(.*\\)/\\1\\ \t => \\2/' | sort
+
+	# Log / history
+	g = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+	details = log -n1 -p --format=fuller
+	changes = "!f() { git log --pretty=format:'* %s' $1..$2; }; f"
+	churn = !git log --all -M -C --name-only --format='format:' "$@" | sort | grep -v '^$' | uniq -c | sort | awk 'BEGIN {print "count,file"} {print $1 "," $2}'
+	out = log --branches --not --remotes
+
+	# Staging / commits
+	all = add . --all
+	unstage = reset HEAD --
+	ci = commit
+	amend = !git log -n 1 --pretty=tformat:%s%n%n%b | git commit -F - --amend
+
+	# Branching
+	co = checkout
+	brdel = branch -D
+
+	# Remote
+	in = pull --dry-run
+
+	# Maintenance
+	this = !git init && git add . && git commit -m \"Initial commit.\"
+	trim = !git reflog expire --expire=now --all && git gc --prune=now
+	export = archive -o latest.tar.gz -9 --prefix=latest/
+	subup = submodule update --init

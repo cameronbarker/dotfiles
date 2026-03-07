@@ -1,132 +1,227 @@
-let plugpath = expand('<sfile>:p:h'). '/autoload/plug.vim'
-if !filereadable(plugpath)
-    if executable('curl')
-        let plugurl = 'https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
-        call system('curl -fLo ' . shellescape(plugpath) . ' --create-dirs ' . plugurl)
-        if v:shell_error
-            echom "Error downloading vim-plug. Please install it manually.\n"
-            exit
-        endif
-    else
-        echom "vim-plug not installed. Please install it manually or install curl.\n"
-        exit
-    endif
-endif
+" =============================================================================
+" .vimrc — Neovim config template
+" =============================================================================
+"
+" INSTALLATION
+" ------------
+" 1. Install Neovim:
+"      macOS:   brew install neovim
+"      Ubuntu:  sudo apt install neovim
+"      Fedora:  sudo dnf install neovim
+"
+" 2. Install vim-plug (plugin manager):
+"      sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+"
+" 3. Create the Neovim config directory:
+"      mkdir -p ~/.config/nvim
+"
+" 4. Point Neovim at this file — pick one option:
+"
+"    Option A — Symlink (edits to this file take effect immediately):
+"      ln -sf /config/projects/pb-configs/.vimrc ~/.config/nvim/init.vim
+"
+"    Option B — Source from init.vim (keeps your init.vim separate):
+"      echo 'source /config/projects/pb-configs/.vimrc' > ~/.config/nvim/init.vim
+"
+" 5. Install plugins (only needed once you uncomment plugins in the Plugins section below):
+"
+"    Option A — from the terminal (installs and exits automatically):
+"      nvim +PlugInstall +qall
+"
+"    Option B — from inside Neovim (run this command after opening nvim):
+"      :PlugInstall
+"
+"    To update plugins later:  :PlugUpdate
+"    To remove unused plugins: :PlugClean
+"
+" =============================================================================
 
+" -----------------------------------------------------------------------------
+" General
+" -----------------------------------------------------------------------------
+set nocompatible
+set encoding=utf-8
+set fileencoding=utf-8
+set history=1000
+set updatetime=300
+set timeoutlen=500
+set hidden                   " allow switching buffers without saving
+set autoread                 " reload files changed outside vim
+set clipboard=unnamedplus    " use system clipboard
+set mouse=a                  " enable mouse support
+set noerrorbells
+set noswapfile
+set nobackup
+set undofile                 " persistent undo
+set undodir=~/.vim/undodir
+
+" -----------------------------------------------------------------------------
+" UI
+" -----------------------------------------------------------------------------
+set number                   " line numbers
+set relativenumber           " relative line numbers
+set cursorline               " highlight current line
+set signcolumn=yes           " always show sign column (for git, lsp)
+set scrolloff=8              " keep 8 lines above/below cursor
+set sidescrolloff=8
+set nowrap                   " no line wrapping
+set colorcolumn=100          " column ruler
+set showcmd
+set showmatch                " highlight matching brackets
+set wildmenu                 " command completion menu
+set wildmode=longest:full,full
+set laststatus=2
+set splitbelow               " new horizontal splits go below
+set splitright               " new vertical splits go right
+
+" -----------------------------------------------------------------------------
+" Search
+" -----------------------------------------------------------------------------
+set incsearch                " search as you type
+set hlsearch                 " highlight search results
+set ignorecase               " case-insensitive search...
+set smartcase                " ...unless uppercase is used
+
+" Clear search highlight
+nnoremap <Esc> :nohlsearch<CR>
+
+" -----------------------------------------------------------------------------
+" Indentation
+" -----------------------------------------------------------------------------
+set expandtab                " spaces instead of tabs
+set tabstop=2
+set shiftwidth=2
+set softtabstop=2
+set smartindent
+set autoindent
+
+" Per-filetype overrides
+augroup filetype_indent
+  autocmd!
+  autocmd FileType python     setlocal tabstop=4 shiftwidth=4 softtabstop=4
+  autocmd FileType go         setlocal noexpandtab tabstop=4 shiftwidth=4
+  autocmd FileType markdown   setlocal wrap linebreak
+augroup END
+
+" -----------------------------------------------------------------------------
+" Leader key
+" -----------------------------------------------------------------------------
+let mapleader = " "
+let maplocalleader = " "
+
+" -----------------------------------------------------------------------------
+" Key mappings
+" -----------------------------------------------------------------------------
+
+" Save / quit
+nnoremap <leader>w :w<CR>
+nnoremap <leader>q :q<CR>
+nnoremap <leader>Q :qa!<CR>
+
+" Window navigation
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+" Window resizing
+nnoremap <C-Up>    :resize +2<CR>
+nnoremap <C-Down>  :resize -2<CR>
+nnoremap <C-Left>  :vertical resize -2<CR>
+nnoremap <C-Right> :vertical resize +2<CR>
+
+" Buffer navigation
+nnoremap <leader>bn :bnext<CR>
+nnoremap <leader>bp :bprevious<CR>
+nnoremap <leader>bd :bdelete<CR>
+nnoremap <leader>bl :buffers<CR>
+
+" Move lines up/down in visual mode
+vnoremap J :m '>+1<CR>gv=gv
+vnoremap K :m '<-2<CR>gv=gv
+
+" Keep cursor centred when jumping
+nnoremap <C-d> <C-d>zz
+nnoremap <C-u> <C-u>zz
+nnoremap n nzzzv
+nnoremap N Nzzzv
+
+" Paste without losing register
+xnoremap <leader>p "_dP
+
+" Copy to system clipboard
+nnoremap <leader>y "+y
+vnoremap <leader>y "+y
+nnoremap <leader>Y "+Y
+
+" Delete without yanking
+nnoremap <leader>d "_d
+vnoremap <leader>d "_d
+
+" Indent in visual mode and stay selected
+vnoremap < <gv
+vnoremap > >gv
+
+" Quick-edit this file
+nnoremap <leader>ev :edit $MYVIMRC<CR>
+nnoremap <leader>sv :source $MYVIMRC<CR>
+
+" -----------------------------------------------------------------------------
+" File explorer (netrw)
+" -----------------------------------------------------------------------------
+let g:netrw_banner    = 0
+let g:netrw_liststyle = 3    " tree view
+let g:netrw_winsize   = 25
+
+nnoremap <leader>e :Lexplore<CR>
+
+" -----------------------------------------------------------------------------
+" Plugins (vim-plug)
+" Install: https://github.com/junegunn/vim-plug
+" Run :PlugInstall after adding plugins
+" -----------------------------------------------------------------------------
 call plug#begin('~/.vim/plugged')
 
-Plug 'scrooloose/nerdtree'
-" {{{
-  let g:NERDTreeMinimalUI = 1
-  let g:NERDTreeHijackNetrw = 0
-  let g:NERDTreeWinSize = 31
-  let g:NERDTreeChDirMode = 2
-  let g:NERDTreeAutoDeleteBuffer = 1
-  let g:NERDTreeShowBookmarks = 1
-  let g:NERDTreeCascadeOpenSingleChildDir = 1
+" -- Fuzzy finding
+Plug 'nvim-telescope/telescope.nvim'
+Plug 'nvim-lua/plenary.nvim'
 
-  map <F1> :call NERDTreeToggleAndFind()<cr>
-  map <F2> :NERDTreeToggle<CR>
+" -- Syntax / treesitter
+Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
 
-  function! NERDTreeToggleAndFind()
-    if (exists('t:NERDTreeBufName') && bufwinnr(t:NERDTreeBufName) != -1)
-      execute ':NERDTreeClose'
-    else
-      execute ':NERDTreeFind'
-    endif
-  endfunction
-" }}}
+" -- LSP
+Plug 'neovim/nvim-lspconfig'
 
-Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
-Plug 'junegunn/fzf.vim'
-" {{{
-  let g:fzf_nvim_statusline = 0 " disable statusline overwriting
+" -- Completion
+Plug 'hrsh7th/nvim-cmp'
+Plug 'hrsh7th/cmp-nvim-lsp'
 
-  nnoremap <silent> <leader><space> :Files<CR>
-  nnoremap <silent> <leader>a :Buffers<CR>
-  nnoremap <silent> <leader>A :Windows<CR>
-  nnoremap <silent> <leader>; :BLines<CR>
-  nnoremap <silent> <leader>o :BTags<CR>
-  nnoremap <silent> <leader>O :Tags<CR>
-  nnoremap <silent> <leader>? :History<CR>
-  nnoremap <silent> <leader>/ :execute 'Ag ' . input('Ag/')<CR>
-  nnoremap <silent> <leader>. :AgIn
+" -- Git
+Plug 'tpope/vim-fugitive'
+Plug 'lewis6991/gitsigns.nvim'
 
-  nnoremap <silent> K :call SearchWordWithAg()<CR>
-  vnoremap <silent> K :call SearchVisualSelectionWithAg()<CR>
-  nnoremap <silent> <leader>gl :Commits<CR>
-  nnoremap <silent> <leader>ga :BCommits<CR>
-  nnoremap <silent> <leader>ft :Filetypes<CR>
+" -- Status line
+Plug 'nvim-lualine/lualine.nvim'
 
-  imap <C-x><C-f> <plug>(fzf-complete-file-ag)
-  imap <C-x><C-l> <plug>(fzf-complete-line)
-
-  function! SearchWordWithAg()
-    execute 'Ag' expand('<cword>')
-  endfunction
-
-  function! SearchVisualSelectionWithAg() range
-    let old_reg = getreg('"')
-    let old_regtype = getregtype('"')
-    let old_clipboard = &clipboard
-    set clipboard&
-    normal! ""gvy
-    let selection = getreg('"')
-    call setreg('"', old_reg, old_regtype)
-    let &clipboard = old_clipboard
-    execute 'Ag' selection
-  endfunction
-
-  function! SearchWithAgInDirectory(...)
-    call fzf#vim#ag(join(a:000[1:], ' '), extend({'dir': a:1}, g:fzf#vim#default_layout))
-  endfunction
-  command! -nargs=+ -complete=dir AgIn call SearchWithAgInDirectory(<f-args>)
-" }}}
-
-Plug 'Raimondi/delimitMate' " automatic closing of quotes, parenthesis, brackets, etc.
-Plug 'tpope/vim-endwise' " automatically add end in ruby
-Plug 'tpope/vim-ragtag' " endings for html, xml, etc. - ehances surround
-Plug 'vim-airline/vim-airline' " fancy statusline
-Plug 'vim-airline/vim-airline-themes' " themes for vim-airline
-
-Plug 'vim-ruby/vim-ruby'
-Plug 'tpope/vim-rails'
-Plug 'tpope/vim-rake'
-Plug 'tpope/vim-bundler'
-
-Plug 'gregsexton/MatchTag', { 'for': 'html' } " match tags in html, similar to paren support
-Plug 'othree/html5.vim', { 'for': 'html' } " html5 support
-
-Plug 'gavocanov/vim-js-indent', { 'for': 'javascript' } " JavaScript indent support
-Plug 'moll/vim-node', { 'for': 'javascript' } " node support
-Plug 'othree/yajs.vim', { 'for': 'javascript' } " JavaScript syntax plugin
-Plug 'othree/es.next.syntax.vim', { 'for': 'javascript' } " ES6 and beyond syntax
-Plug 'mxw/vim-jsx', { 'for': ['jsx', 'javascript'] } " JSX support
-
-Plug 'cakebaker/scss-syntax.vim', { 'for': 'scss' } " sass scss syntax support
+" -- Colour scheme
+Plug 'catppuccin/nvim', { 'as': 'catppuccin' }
 
 call plug#end()
 
-set relativenumber
-set numberwidth=3
-set cpoptions+=n
-highlight LineNr term=bold cterm=NONE ctermfg=DarkGrey ctermbg=NONE gui=NONE guifg=DarkGrey guibg=NONE
-set backspace=2
-set tabstop=2 softtabstop=0 expandtab shiftwidth=2 smarttab
-set mouse=a
+" -----------------------------------------------------------------------------
+" Colour scheme (uncomment after installing a theme plugin)
+" -----------------------------------------------------------------------------
+syntax enable
+set termguicolors
+colorscheme catppuccin
 
-
-
-" Tab logic
-nnoremap <C-Left> :tabprevious<CR>
-nnoremap <C-Right> :tabnext<CR>
-nnoremap <silent> <A-Left> :execute 'silent! tabmove ' . (tabpagenr()-2)<CR>
-nnoremap <silent> <A-Right> :execute 'silent! tabmove ' . (tabpagenr()+1)<CR>
-
-" Disable Arrow keys in Escape mode
-" map <up> <nop>
-" map <down> <nop>
-" map <left> <nop>
-" map <right> <nop>
-" map <j> <nop>
-" map <k> <nop>
+" -----------------------------------------------------------------------------
+" Autocommands
+" -----------------------------------------------------------------------------
+augroup general
+  autocmd!
+  " Remove trailing whitespace on save
+  autocmd BufWritePre * :%s/\s\+$//e
+  " Return to last edit position when opening a file
+  autocmd BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+augroup END

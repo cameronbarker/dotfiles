@@ -188,9 +188,6 @@ call plug#begin('~/.vim/plugged')
 Plug 'nvim-telescope/telescope.nvim'
 Plug 'nvim-lua/plenary.nvim'
 
-" -- Syntax / treesitter
-Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
-
 " -- LSP
 Plug 'neovim/nvim-lspconfig'
 
@@ -215,7 +212,8 @@ call plug#end()
 " -----------------------------------------------------------------------------
 syntax enable
 set termguicolors
-colorscheme catppuccin
+" Before :PlugInstall, catppuccin is missing — avoid E185 on first open
+silent! colorscheme catppuccin
 
 " -----------------------------------------------------------------------------
 " Autocommands

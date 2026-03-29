@@ -52,7 +52,8 @@ install_apt_packages() {
   # bat — syntax-highlighted cat (.terminal); Debian binary is batcat
   # fzf — fuzzy finder (Ctrl-R / Ctrl-T); available on recent Debian/Ubuntu
   # xclip, wl-clipboard — clipboard for cwd alias (X11 and Wayland)
-  local packages=(neovim bat fzf xclip wl-clipboard)
+  # git, curl — vim-plug and :PlugInstall clone plugins
+  local packages=(neovim bat fzf xclip wl-clipboard git curl)
 
   if [[ "$WITH_GIT" == true ]]; then
     # .gitconfig uses credential.helper = libsecret on Linux
@@ -74,10 +75,27 @@ install_apt_packages() {
 
 install_apt_packages
 
+install_vim_plug() {
+  local dest="${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim"
+  if [[ -f "${dest}" ]]; then
+    return 0
+  fi
+  if ! command -v curl &>/dev/null; then
+    echo "Install curl, then re-run or fetch vim-plug manually — see README." >&2
+    return 0
+  fi
+  echo "Installing vim-plug to ${dest}"
+  mkdir -p "$(dirname "${dest}")"
+  curl -fLo "${dest}" --create-dirs \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+}
+
 mkdir -p "${HOME}/.config"
 ln -sf "${SCRIPT_DIR}/starship.toml" "${HOME}/.config/starship.toml"
 mkdir -p "${HOME}/.config/nvim"
 ln -sf "${SCRIPT_DIR}/.vimrc" "${HOME}/.config/nvim/init.vim"
+
+install_vim_plug
 
 if [[ "$WITH_GIT" == true ]]; then
   ln -sf "${SCRIPT_DIR}/.gitconfig" "${HOME}/.gitconfig"
@@ -97,5 +115,8 @@ if [[ "$WITH_GIT" != true ]]; then
   echo "Tip: run with --git to symlink .gitconfig (skipped by default)."
 fi
 if [[ "$NO_APT" != true ]] && [[ -f /etc/debian_version ]]; then
-  echo "Tip: Starship and vim-plug are not from apt — see README."
+  echo "Tip: install Starship with its curl script — see README."
+fi
+if command -v nvim &>/dev/null && [[ -f "${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim" ]]; then
+  echo "Tip: run 'nvim +PlugInstall +qall' once to install plugins (needs git + network)."
 fi

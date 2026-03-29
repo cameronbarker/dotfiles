@@ -13,13 +13,15 @@ cd ~/Dotfiles && ./install.sh
 
 This symlinks `starship.toml` and `.vimrc` (as Neovim `init.vim`) into `~/.config`, and appends a guarded `source` line to `~/.bashrc`. Re-running is safe (skips duplicate shell hooks).
 
-On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `neovim`, `bat`, `fzf`, `xclip`, `wl-clipboard`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For fuzzy history and Ctrl-T file search, install fzf from git (below) so `~/.fzf.bash` exists.
+On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `neovim`, `bat`, `fzf`, `xclip`, `wl-clipboard`, `git`, `curl`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For fuzzy history and Ctrl-T file search, install fzf from git (below) so `~/.fzf.bash` exists.
+
+The script also downloads **vim-plug** into `~/.local/share/nvim/site/autoload/plug.vim` if missing. Run `nvim +PlugInstall +qall` once to fetch plugins.
 
 - `./install.sh --zsh` — append the hook to `~/.zshrc` instead of `~/.bashrc`.
 - `./install.sh --git` — also symlink `.gitconfig` into `~` (off by default so an existing config is not overwritten).
 - `./install.sh --no-apt` — skip apt (macOS, containers without sudo, or you manage packages yourself).
 
-Install **Starship** and **vim-plug** separately — they are not Debian packages (see below).
+Install **Starship** with its install script — not from apt (see below).
 
 ## Files
 
@@ -82,19 +84,19 @@ Install **Starship** and **vim-plug** separately — they are not Debian package
    sudo apt install neovim
    ```
 
-2. Install [vim-plug](https://github.com/junegunn/vim-plug):
+2. [vim-plug](https://github.com/junegunn/vim-plug): `./install.sh` downloads `plug.vim` if it is missing. By hand:
    ```sh
    sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
      https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
    ```
 
-3. `./install.sh` already symlinks `~/.config/nvim/init.vim`; or:
+3. `./install.sh` symlinks `~/.config/nvim/init.vim`; or:
    ```sh
    mkdir -p ~/.config/nvim
    ln -s /path/to/repo/.vimrc ~/.config/nvim/init.vim
    ```
 
-4. Open Neovim and run `:PlugInstall`.
+4. Run `nvim +PlugInstall +qall` once (needs `git` and network).
 
 ### VSCode (`vscode.jsonc`)
 

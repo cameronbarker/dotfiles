@@ -115,7 +115,7 @@ Install **Starship** with its install script — not from apt (see below).
    ln -s /path/to/repo/.vimrc ~/.config/nvim/init.vim
    ```
 
-4. Run `nvim +PlugInstall +qall` once (needs `git` and network). Plugins are chosen to run on **Neovim from apt** (0.7+): `fzf.vim`, `vim-airline`, `vim-fugitive`, `catppuccin/vim`. For a full Lua/LSP stack you need a newer Neovim (0.10+) and different plugins.
+4. Run `nvim +PlugInstall +qall` once (needs `git` and network). Telescope, **nvim-treesitter**, LSP, gitsigns, and lualine expect a **recent Neovim (0.10+)** — use `./install.sh --nvim-appimage` or the AppImage steps above if your distro package is older. Install language parsers with `:TSInstall <lang>` (or `:TSInstall all`) inside Neovim.
 
 ### VSCode (`vscode.jsonc`)
 

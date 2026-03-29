@@ -184,36 +184,49 @@ nnoremap <leader>e :Lexplore<CR>
 " -----------------------------------------------------------------------------
 call plug#begin('~/.vim/plugged')
 
-" Picked for Neovim from apt (0.7+) — avoids Telescope / LSP / gitsigns / lualine
-" which need nvim 0.10+.
+" -- Fuzzy finding
+Plug 'nvim-telescope/telescope.nvim'
+Plug 'nvim-lua/plenary.nvim'
 
-" -- Fuzzy finding (needs fzf on PATH — install.sh installs it on Debian)
-Plug 'junegunn/fzf.vim'
+" -- Syntax / treesitter (needs Neovim 0.10+)
+Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
+
+" -- LSP
+Plug 'neovim/nvim-lspconfig'
+
+" -- Completion
+Plug 'hrsh7th/nvim-cmp'
+Plug 'hrsh7th/cmp-nvim-lsp'
 
 " -- Git
 Plug 'tpope/vim-fugitive'
+Plug 'lewis6991/gitsigns.nvim'
 
 " -- Status line
-Plug 'vim-airline/vim-airline'
+Plug 'nvim-lualine/lualine.nvim'
 
-" -- Colour scheme (Vimscript port; catppuccin/nvim needs newer Neovim)
-Plug 'catppuccin/vim', { 'as': 'catppuccin' }
+" -- Colour scheme
+Plug 'catppuccin/nvim', { 'as': 'catppuccin' }
 
 call plug#end()
 
-" fzf.vim — needs ripgrep for :Rg (optional: apt install ripgrep)
-nnoremap <leader>ff :Files<CR>
-nnoremap <leader>fb :Buffers<CR>
-nnoremap <leader>fh :History<CR>
-nnoremap <leader>fg :Rg<CR>
+lua << EOF
+local ok, configs = pcall(require, 'nvim-treesitter.configs')
+if ok then
+  configs.setup({
+    highlight = { enable = true },
+    indent = { enable = true },
+  })
+end
+EOF
 
 " -----------------------------------------------------------------------------
 " Colour scheme (uncomment after installing a theme plugin)
 " -----------------------------------------------------------------------------
 syntax enable
 set termguicolors
-" catppuccin/vim: catppuccin_mocha, catppuccin_macchiato, catppuccin_frappe, catppuccin_latte
-silent! colorscheme catppuccin_mocha
+" Before :PlugInstall, catppuccin is missing — avoid E185 on first open
+silent! colorscheme catppuccin
 
 " -----------------------------------------------------------------------------
 " Autocommands
@@ -224,4 +237,10 @@ augroup general
   autocmd BufWritePre * :%s/\s\+$//e
   " Return to last edit position when opening a file
   autocmd BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+augroup END
+
+" Start in insert mode when a normal file buffer is first read (not help/qf/netrw)
+augroup start_in_insert
+  autocmd!
+  autocmd BufReadPost * if empty(&buftype) && &filetype !=# 'netrw' | startinsert | endif
 augroup END

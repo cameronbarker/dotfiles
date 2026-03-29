@@ -6,17 +6,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 USE_ZSH=false
 WITH_GIT=false
 NO_APT=false
-NVIM_APPIMAGE=false
+# On Linux, Neovim comes from the official extracted AppImage under /opt/nvim (no FUSE).
+NVIM_APPIMAGE=true
 
 for arg in "$@"; do
   case "$arg" in
     --zsh) USE_ZSH=true ;;
     --git) WITH_GIT=true ;;
     --no-apt) NO_APT=true ;;
-    --nvim-appimage) NVIM_APPIMAGE=true ;;
+    --no-nvim-appimage) NVIM_APPIMAGE=false ;;
+    --nvim-appimage) ;; # default; kept for old scripts / docs
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: $0 [--zsh] [--git] [--no-apt] [--nvim-appimage]" >&2
+      echo "Usage: $0 [--zsh] [--git] [--no-apt] [--no-nvim-appimage]" >&2
       exit 1
       ;;
   esac
@@ -56,7 +58,7 @@ install_apt_packages() {
   # fzf — fuzzy finder (Ctrl-R / Ctrl-T); available on recent Debian/Ubuntu
   # xclip, wl-clipboard — clipboard for cwd alias (X11 and Wayland)
   # git, curl — vim-plug and :PlugInstall clone plugins
-  # neovim omitted when --nvim-appimage (official AppImage under /opt/nvim)
+  # neovim from apt only with --no-nvim-appimage (default is extracted AppImage on Linux)
   local packages=(bat fzf ripgrep xclip wl-clipboard git curl)
   if [[ "$NVIM_APPIMAGE" != true ]]; then
     packages=(neovim "${packages[@]}")
@@ -83,7 +85,6 @@ install_apt_packages() {
 install_nvim_appimage() {
   [[ "$NVIM_APPIMAGE" == true ]] || return 0
   if [[ "$(uname -s)" != Linux ]]; then
-    echo "Neovim AppImage is Linux-only; skipped." >&2
     return 0
   fi
 

@@ -7,28 +7,23 @@ Personal config files for a cross-platform (macOS/Linux) dev environment.
 Clone to any path, then run the installer from the repo root:
 
 ```sh
-git clone <your-repo-url> ~/Dotfiles
+git clone https://github.com/cameronbarker/dotfiles.git ~/Dotfiles
 cd ~/Dotfiles && ./install.sh
 ```
 
-For a **current Neovim** on Linux (recommended over distro packages for Lua plugins), use the [official AppImage](https://github.com/neovim/neovim/releases):
-
-```sh
-cd ~/Dotfiles && ./install.sh --nvim-appimage
-```
-
-That downloads the latest AppImage, **extracts** it to `/opt/nvim` (real files under `/opt/nvim/usr/bin/nvim`), and prepends **`/opt/nvim/usr/bin`** to your `PATH` in `~/.bashrc`. Extraction avoids **FUSE**, which many **LXC / Proxmox / Jellyfin-style** hosts do not provide (`fuse: device not found`). It also **skips** the apt `neovim` package. If you installed before this behavior, re-run `./install.sh --nvim-appimage` so `/opt/nvim` is replaced and your `PATH` line is updated.
+On **Linux**, `./install.sh` installs Neovim from the [official AppImage](https://github.com/neovim/neovim/releases) by default: it **extracts** to `/opt/nvim` (binaries under `/opt/nvim/usr/bin/nvim`) and prepends **`/opt/nvim/usr/bin`** to your `PATH` in `~/.bashrc`. Extraction avoids **FUSE**, which many **LXC / Proxmox / Jellyfin** hosts lack. The apt **`neovim`** package is **not** installed unless you pass **`--no-nvim-appimage`**. On **macOS**, the AppImage step is skipped (install Neovim with Homebrew, etc.).
 
 This symlinks `starship.toml` and `.vimrc` (as Neovim `init.vim`) into `~/.config`, and appends a guarded `source` line to `~/.bashrc`. Re-running is safe (skips duplicate shell hooks).
 
-On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `neovim` (unless `--nvim-appimage`), `bat`, `fzf`, `ripgrep`, `xclip`, `wl-clipboard`, `git`, `curl`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For fuzzy history and Ctrl-T file search, install fzf from git (below) so `~/.fzf.bash` exists.
+On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `bat`, `fzf`, `ripgrep`, `xclip`, `wl-clipboard`, `git`, `curl`, and **`neovim` only if** `--no-nvim-appimage`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For fuzzy history and Ctrl-T file search, install fzf from git (below) so `~/.fzf.bash` exists.
 
 The script also downloads **vim-plug** into `~/.local/share/nvim/site/autoload/plug.vim` if missing. Run `nvim +PlugInstall +qall` once to fetch plugins.
 
 - `./install.sh --zsh` — append the hook to `~/.zshrc` instead of `~/.bashrc`.
 - `./install.sh --git` — also symlink `.gitconfig` into `~` (off by default so an existing config is not overwritten).
 - `./install.sh --no-apt` — skip apt (macOS, containers without sudo, or you manage packages yourself).
-- `./install.sh --nvim-appimage` — Linux only: install latest Neovim from the official GitHub AppImage under `/opt/nvim` and put it on `PATH` (implies no apt `neovim`).
+- `./install.sh --no-nvim-appimage` — on Debian/Ubuntu, install **`neovim` from apt** instead of the extracted AppImage under `/opt/nvim` (ignored on non-Linux).
+- `./install.sh --nvim-appimage` — no-op (AppImage is already the default); kept for compatibility.
 
 Install **Starship** with its install script — not from apt (see below).
 
@@ -37,7 +32,7 @@ Install **Starship** with its install script — not from apt (see below).
 From the repo root, [`uninstall.sh`](uninstall.sh) removes what `install.sh` added (only symlinks that still point at **this** clone):
 
 ```sh
-cd ~/Dotfiles && ./uninstall.sh
+cd ~/Dotfiles && ./uninstall.sh --git --nvim-appimage --vim-plug --plugged
 ```
 
 - **`--git`** — also remove `~/.gitconfig` if it symlinks this repo’s `.gitconfig`.
@@ -56,7 +51,7 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
 | `.terminal` | Bash/Zsh aliases and shell functions (sourced from `~/.bashrc` or `~/.zshrc`) |
 | `starship.toml` | [Starship](https://starship.rs) prompt config |
 | `vscode.jsonc` | VSCode `settings.json` |
-| `install.sh` | Symlinks, shell hook, optional apt, optional Neovim AppImage |
+| `install.sh` | Symlinks, shell hook, apt on Debian; Neovim via extracted AppImage on Linux by default |
 | `uninstall.sh` | Reverse symlinks + rc markers; optional AppImage / vim-plug / plugged |
 
 ## Setup (manual / details)
@@ -113,8 +108,7 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
    echo 'export PATH="/opt/nvim/usr/bin:$PATH"' >> ~/.bashrc
    # On arm64: use nvim-linux-arm64.appimage instead.
 
-   # Or let the dotfiles installer do the above:
-   # ./install.sh --nvim-appimage
+   # Default ./install.sh on Linux does this AppImage extract for you.
 
    # Ubuntu / Debian — older build from apt (fine for the bundled plugin set)
    sudo apt install neovim
@@ -132,7 +126,7 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
    ln -s /path/to/repo/.vimrc ~/.config/nvim/init.vim
    ```
 
-4. Run `nvim +PlugInstall +qall` once (needs `git` and network). Telescope, **nvim-treesitter**, LSP, gitsigns, and lualine expect a **recent Neovim (0.10+)** — use `./install.sh --nvim-appimage` or the AppImage steps above if your distro package is older. Install language parsers with `:TSInstall <lang>` (or `:TSInstall all`) inside Neovim.
+4. Run `nvim +PlugInstall +qall` once (needs `git` and network). Telescope, **nvim-treesitter**, LSP, gitsigns, and lualine expect **Neovim 0.10+** — the default Linux install uses the AppImage; use **`--no-nvim-appimage`** only if you accept the older distro `neovim`. Install language parsers with `:TSInstall <lang>` (or `:TSInstall all`) inside Neovim.
 
 ### VSCode (`vscode.jsonc`)
 

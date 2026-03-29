@@ -1,10 +1,9 @@
 # =============================================================================
-# .terminal — shell config template
-# Sourced from ~/.zshrc
+# .terminal — shell config template (bash and zsh)
 #
 # Installation:
-#   1. Symlink or source this file from ~/.zshrc:
-#        echo 'source ~/projects/pb-configs/.terminal' >> ~/.zshrc
+#   1. From the repo: ./install.sh   (appends a source line to ~/.bashrc)
+#      Or manually: echo 'source /path/to/repo/.terminal' >> ~/.bashrc
 #
 #   2. Install dependencies:
 #        Starship (prompt):   curl -sS https://starship.rs/install.sh | sh
@@ -12,6 +11,11 @@
 #        z (dir jumping):     git clone https://github.com/rupa/z.git ~/.z-plugin
 #        bat (cat w/ color):  apt install bat  # installs as 'batcat' on Debian/Ubuntu
 # =============================================================================
+
+# -----------------------------------------------------------------------------
+# Terminal
+# -----------------------------------------------------------------------------
+alias c='clear'
 
 # -----------------------------------------------------------------------------
 # Editor
@@ -29,8 +33,19 @@ alias ~='cd ~'
 alias -- -='cd -'
 
 alias c='clear'
+if command -v pbcopy &>/dev/null; then
+  :
+elif command -v xclip &>/dev/null; then
+  pbcopy() { xclip -selection clipboard; }
+elif command -v wl-copy &>/dev/null; then
+  pbcopy() { wl-copy; }
+fi
 alias cwd='echo -n $PWD | pbcopy && echo "Copied current path to clipboard"'
-alias src='source ~/.zshrc'
+if [[ -n "${BASH_VERSION:-}" ]]; then
+  alias src='source ~/.bashrc'
+elif [[ -n "${ZSH_VERSION:-}" ]]; then
+  alias src='source ~/.zshrc'
+fi
 
 # -----------------------------------------------------------------------------
 # File listing
@@ -120,7 +135,11 @@ ff() { find . -name "*$1*" 2>/dev/null; }
 # fzf — fuzzy finder (Ctrl-R history search, Ctrl-T file search)
 # -----------------------------------------------------------------------------
 if command -v fzf &>/dev/null; then
-  eval "$(fzf --zsh)"
+  if [[ -n "${BASH_VERSION:-}" ]]; then
+    eval "$(fzf --bash)"
+  elif [[ -n "${ZSH_VERSION:-}" ]]; then
+    eval "$(fzf --zsh)"
+  fi
   export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border"
   # Use bat for fzf file previews if available
   if command -v batcat &>/dev/null; then
@@ -150,5 +169,11 @@ fi
 # -----------------------------------------------------------------------------
 # Prompt
 # -----------------------------------------------------------------------------
-export STARSHIP_CONFIG=~/projects/pb-configs/starship.toml
-eval "$(starship init zsh)"
+export STARSHIP_CONFIG="${HOME}/.config/starship.toml"
+if command -v starship &>/dev/null; then
+  if [[ -n "${BASH_VERSION:-}" ]]; then
+    eval "$(starship init bash)"
+  elif [[ -n "${ZSH_VERSION:-}" ]]; then
+    eval "$(starship init zsh)"
+  fi
+fi

@@ -13,7 +13,7 @@ cd ~/Dotfiles && ./install.sh
 
 This symlinks `starship.toml` and `.vimrc` (as Neovim `init.vim`) into `~/.config`, and appends a guarded `source` line to `~/.bashrc`. Re-running is safe (skips duplicate shell hooks).
 
-On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `neovim`, `bat`, `fzf`, `xclip`, `wl-clipboard`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`.
+On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `neovim`, `bat`, `fzf`, `xclip`, `wl-clipboard`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For fuzzy history and Ctrl-T file search, install fzf from git (below) so `~/.fzf.bash` exists.
 
 - `./install.sh --zsh` — append the hook to `~/.zshrc` instead of `~/.bashrc`.
 - `./install.sh --git` — also symlink `.gitconfig` into `~` (off by default so an existing config is not overwritten).

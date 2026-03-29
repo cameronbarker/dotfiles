@@ -112,36 +112,66 @@ install_nvim_appimage() {
     return 0
   fi
 
-  local url tmp
+  local url work
   url="https://github.com/neovim/neovim/releases/latest/download/${asset}"
-  tmp="$(mktemp)"
+  work="$(mktemp -d)"
   echo "Downloading Neovim AppImage: ${url}"
-  if ! curl -fL --retry 3 -o "${tmp}" "${url}"; then
-    rm -f "${tmp}"
+  if ! curl -fL --retry 3 -o "${work}/${asset}" "${url}"; then
+    rm -rf "${work}"
     echo "Neovim AppImage download failed." >&2
     return 0
   fi
-  chmod u+x "${tmp}"
+  chmod u+x "${work}/${asset}"
+
+  # Extract instead of running the AppImage directly — no FUSE (needed for many LXCs / minimal hosts).
+  echo "Extracting AppImage to /opt/nvim (works without FUSE)..."
+  if ! (cd "${work}" && "./${asset}" --appimage-extract); then
+    rm -rf "${work}"
+    echo "Neovim AppImage --appimage-extract failed." >&2
+    return 0
+  fi
+  if [[ ! -f "${work}/squashfs-root/usr/bin/nvim" ]]; then
+    rm -rf "${work}"
+    echo "Neovim AppImage layout missing squashfs-root/usr/bin/nvim" >&2
+    return 0
+  fi
 
   if [[ ${#priv[@]} -eq 0 ]]; then
-    mkdir -p /opt/nvim
-    install -m 755 "${tmp}" /opt/nvim/nvim
+    rm -rf /opt/nvim
+    mv "${work}/squashfs-root" /opt/nvim
   else
-    "${priv[@]}" mkdir -p /opt/nvim
-    "${priv[@]}" install -m 755 "${tmp}" /opt/nvim/nvim
+    "${priv[@]}" rm -rf /opt/nvim
+    "${priv[@]}" mv "${work}/squashfs-root" /opt/nvim
   fi
-  rm -f "${tmp}"
+  rm -rf "${work}"
 
+  local path_line='export PATH="/opt/nvim/usr/bin:$PATH"'
+  local tmpf
   if [[ -f "${RC_FILE}" ]] && grep -qF "${NVIM_PATH_MARKER}" "${RC_FILE}"; then
-    echo "Neovim AppImage PATH hook already present in ${RC_FILE}"
+    if grep -qF "${path_line}" "${RC_FILE}"; then
+      echo "Neovim PATH already uses /opt/nvim/usr/bin in ${RC_FILE}"
+    elif grep -qF 'export PATH="/opt/nvim:$PATH"' "${RC_FILE}"; then
+      tmpf="$(mktemp)"
+      while IFS= read -r line || [[ -n "${line}" ]]; do
+        if [[ "$line" == 'export PATH="/opt/nvim:$PATH"' ]]; then
+          printf '%s\n' "${path_line}"
+        else
+          printf '%s\n' "$line"
+        fi
+      done <"${RC_FILE}" >"${tmpf}"
+      mv "${tmpf}" "${RC_FILE}"
+      echo "Updated ${RC_FILE} for extracted Neovim (was FUSE-style PATH)"
+    else
+      echo "Note: add to ${RC_FILE}: ${path_line}" >&2
+    fi
   else
     {
       printf '\n%s\n' "${NVIM_PATH_MARKER}"
-      printf 'export PATH="/opt/nvim:$PATH"\n'
+      printf '%s\n' "${path_line}"
     } >>"${RC_FILE}"
-    echo "Appended PATH for /opt/nvim/nvim to ${RC_FILE}"
+    echo "Appended PATH for /opt/nvim/usr/bin/nvim to ${RC_FILE}"
   fi
-  echo "Neovim AppImage installed as /opt/nvim/nvim — open a new shell or: source ${RC_FILE}"
+  echo "Neovim installed under /opt/nvim — open a new shell or: source ${RC_FILE}"
 }
 
 install_apt_packages

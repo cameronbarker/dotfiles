@@ -17,7 +17,7 @@ For a **current Neovim** on Linux (recommended over distro packages for Lua plug
 cd ~/Dotfiles && ./install.sh --nvim-appimage
 ```
 
-That downloads the latest `nvim-linux-x86_64.appimage` or `nvim-linux-arm64.appimage`, installs it as `/opt/nvim/nvim`, prepends `/opt/nvim` to your `PATH` in `~/.bashrc`, and **skips** the apt `neovim` package. If FUSE is missing, see the [Neovim install docs](https://github.com/neovim/neovim/blob/master/INSTALL.md) (`--appimage-extract`).
+That downloads the latest AppImage, **extracts** it to `/opt/nvim` (real files under `/opt/nvim/usr/bin/nvim`), and prepends **`/opt/nvim/usr/bin`** to your `PATH` in `~/.bashrc`. Extraction avoids **FUSE**, which many **LXC / Proxmox / Jellyfin-style** hosts do not provide (`fuse: device not found`). It also **skips** the apt `neovim` package. If you installed before this behavior, re-run `./install.sh --nvim-appimage` so `/opt/nvim` is replaced and your `PATH` line is updated.
 
 This symlinks `starship.toml` and `.vimrc` (as Neovim `init.vim`) into `~/.config`, and appends a guarded `source` line to `~/.bashrc`. Re-running is safe (skips duplicate shell hooks).
 
@@ -32,6 +32,21 @@ The script also downloads **vim-plug** into `~/.local/share/nvim/site/autoload/p
 
 Install **Starship** with its install script — not from apt (see below).
 
+### Uninstall
+
+From the repo root, [`uninstall.sh`](uninstall.sh) removes what `install.sh` added (only symlinks that still point at **this** clone):
+
+```sh
+cd ~/Dotfiles && ./uninstall.sh
+```
+
+- **`--git`** — also remove `~/.gitconfig` if it symlinks this repo’s `.gitconfig`.
+- **`--nvim-appimage`** — remove `/opt/nvim` (extracted tree or old single-file install; needs root or `sudo`).
+- **`--vim-plug`** — remove `~/.local/share/nvim/site/autoload/plug.vim`.
+- **`--plugged`** — delete `~/.vim/plugged` (all vim-plug clones).
+
+Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. **Apt packages are not removed.**
+
 ## Files
 
 | File | Description |
@@ -42,6 +57,7 @@ Install **Starship** with its install script — not from apt (see below).
 | `starship.toml` | [Starship](https://starship.rs) prompt config |
 | `vscode.jsonc` | VSCode `settings.json` |
 | `install.sh` | Symlinks, shell hook, optional apt, optional Neovim AppImage |
+| `uninstall.sh` | Reverse symlinks + rc markers; optional AppImage / vim-plug / plugged |
 
 ## Setup (manual / details)
 
@@ -89,11 +105,12 @@ Install **Starship** with its install script — not from apt (see below).
    # macOS
    brew install neovim
 
-   # Linux — latest (official AppImage, matches neovim/neovim releases)
+   # Linux — latest AppImage without FUSE (LXC-friendly): extract, then PATH to usr/bin
    curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.appimage
    chmod u+x nvim-linux-x86_64.appimage
-   sudo mkdir -p /opt/nvim && sudo mv nvim-linux-x86_64.appimage /opt/nvim/nvim
-   echo 'export PATH="/opt/nvim:$PATH"' >> ~/.bashrc
+   ./nvim-linux-x86_64.appimage --appimage-extract
+   sudo rm -rf /opt/nvim && sudo mv squashfs-root /opt/nvim
+   echo 'export PATH="/opt/nvim/usr/bin:$PATH"' >> ~/.bashrc
    # On arm64: use nvim-linux-arm64.appimage instead.
 
    # Or let the dotfiles installer do the above:

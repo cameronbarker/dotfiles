@@ -17,11 +17,13 @@
 "
 " 4. Point Neovim at this file — pick one option:
 "
-"    Option A — Symlink (edits to this file take effect immediately):
-"      ln -sf /config/projects/pb-configs/.vimrc ~/.config/nvim/init.vim
+"    Option A — From the repo: ./install.sh (symlinks this file to ~/.config/nvim/init.vim)
 "
-"    Option B — Source from init.vim (keeps your init.vim separate):
-"      echo 'source /config/projects/pb-configs/.vimrc' > ~/.config/nvim/init.vim
+"    Option B — Symlink manually:
+"      ln -sf /path/to/repo/.vimrc ~/.config/nvim/init.vim
+"
+"    Option C — Source from init.vim (keeps your init.vim separate):
+"      echo 'source /path/to/repo/.vimrc' > ~/.config/nvim/init.vim
 "
 " 5. Install plugins (only needed once you uncomment plugins in the Plugins section below):
 "

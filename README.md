@@ -2,17 +2,37 @@
 
 Personal config files for a cross-platform (macOS/Linux) dev environment.
 
+## Quick install (Debian/Linux, bash)
+
+Clone to any path, then run the installer from the repo root:
+
+```sh
+git clone <your-repo-url> ~/Dotfiles
+cd ~/Dotfiles && ./install.sh
+```
+
+This symlinks `starship.toml` and `.vimrc` (as Neovim `init.vim`) into `~/.config`, and appends a guarded `source` line to `~/.bashrc`. Re-running is safe (skips duplicate shell hooks).
+
+On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `neovim`, `bat`, `fzf`, `xclip`, `wl-clipboard`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`.
+
+- `./install.sh --zsh` — append the hook to `~/.zshrc` instead of `~/.bashrc`.
+- `./install.sh --git` — also symlink `.gitconfig` into `~` (off by default so an existing config is not overwritten).
+- `./install.sh --no-apt` — skip apt (macOS, containers without sudo, or you manage packages yourself).
+
+Install **Starship** and **vim-plug** separately — they are not Debian packages (see below).
+
 ## Files
 
 | File | Description |
 |------|-------------|
 | `.gitconfig` | Git config — aliases, delta pager, credential helper |
 | `.vimrc` | Neovim config with vim-plug |
-| `.terminal` | Zsh aliases and shell functions (sourced from `~/.zshrc`) |
+| `.terminal` | Bash/Zsh aliases and shell functions (sourced from `~/.bashrc` or `~/.zshrc`) |
 | `starship.toml` | [Starship](https://starship.rs) prompt config |
 | `vscode.jsonc` | VSCode `settings.json` |
+| `install.sh` | Symlinks + shell hook for a fresh machine |
 
-## Setup
+## Setup (manual / details)
 
 ### Shell (`.terminal` + `starship.toml`)
 
@@ -31,19 +51,15 @@ Personal config files for a cross-platform (macOS/Linux) dev environment.
    sudo apt install bat
    ```
 
-2. Source `.terminal` from your `~/.zshrc`:
+2. Prefer `./install.sh` (or `./install.sh --zsh`) for sourcing and symlinks; or add by hand:
    ```sh
-   echo 'source ~/projects/pb-configs/.terminal' >> ~/.zshrc
-   ```
-
-3. Symlink `starship.toml`:
-   ```sh
-   mkdir -p ~/.config && ln -s ~/projects/pb-configs/starship.toml ~/.config/starship.toml
+   echo 'source /path/to/repo/.terminal' >> ~/.bashrc
+   mkdir -p ~/.config && ln -s /path/to/repo/starship.toml ~/.config/starship.toml
    ```
 
 ### Git (`.gitconfig`)
 
-1. Copy to home directory:
+1. Use `./install.sh --git` after clone, or copy:
    ```sh
    cp .gitconfig ~/.gitconfig
    ```
@@ -72,20 +88,16 @@ Personal config files for a cross-platform (macOS/Linux) dev environment.
      https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
    ```
 
-3. Symlink or copy the config:
+3. `./install.sh` already symlinks `~/.config/nvim/init.vim`; or:
    ```sh
    mkdir -p ~/.config/nvim
-   ln -s ~/projects/pb-configs/.vimrc ~/.config/nvim/init.vim
+   ln -s /path/to/repo/.vimrc ~/.config/nvim/init.vim
    ```
 
 4. Open Neovim and run `:PlugInstall`.
 
 ### VSCode (`vscode.jsonc`)
 
-```sh
-# Linux
-cp vscode.jsonc /config/data/User/settings.json
-```
+Paths differ by install (e.g. `~/.config/Code/User/settings.json` on Linux). Copy or merge `vscode.jsonc` into your editor’s `settings.json`.
 
 Required extensions: `One Dark Pro`, `Prettier`, `Ruby LSP`, `Rails`.
-

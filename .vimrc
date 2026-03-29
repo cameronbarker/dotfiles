@@ -184,36 +184,36 @@ nnoremap <leader>e :Lexplore<CR>
 " -----------------------------------------------------------------------------
 call plug#begin('~/.vim/plugged')
 
-" -- Fuzzy finding
-Plug 'nvim-telescope/telescope.nvim'
-Plug 'nvim-lua/plenary.nvim'
+" Picked for Neovim from apt (0.7+) — avoids Telescope / LSP / gitsigns / lualine
+" which need nvim 0.10+.
 
-" -- LSP
-Plug 'neovim/nvim-lspconfig'
-
-" -- Completion
-Plug 'hrsh7th/nvim-cmp'
-Plug 'hrsh7th/cmp-nvim-lsp'
+" -- Fuzzy finding (needs fzf on PATH — install.sh installs it on Debian)
+Plug 'junegunn/fzf.vim'
 
 " -- Git
 Plug 'tpope/vim-fugitive'
-Plug 'lewis6991/gitsigns.nvim'
 
 " -- Status line
-Plug 'nvim-lualine/lualine.nvim'
+Plug 'vim-airline/vim-airline'
 
-" -- Colour scheme
-Plug 'catppuccin/nvim', { 'as': 'catppuccin' }
+" -- Colour scheme (Vimscript port; catppuccin/nvim needs newer Neovim)
+Plug 'catppuccin/vim', { 'as': 'catppuccin' }
 
 call plug#end()
+
+" fzf.vim — needs ripgrep for :Rg (optional: apt install ripgrep)
+nnoremap <leader>ff :Files<CR>
+nnoremap <leader>fb :Buffers<CR>
+nnoremap <leader>fh :History<CR>
+nnoremap <leader>fg :Rg<CR>
 
 " -----------------------------------------------------------------------------
 " Colour scheme (uncomment after installing a theme plugin)
 " -----------------------------------------------------------------------------
 syntax enable
 set termguicolors
-" Before :PlugInstall, catppuccin is missing — avoid E185 on first open
-silent! colorscheme catppuccin
+" catppuccin/vim: catppuccin_mocha, catppuccin_macchiato, catppuccin_frappe, catppuccin_latte
+silent! colorscheme catppuccin_mocha
 
 " -----------------------------------------------------------------------------
 " Autocommands

@@ -11,15 +11,24 @@ git clone <your-repo-url> ~/Dotfiles
 cd ~/Dotfiles && ./install.sh
 ```
 
+For a **current Neovim** on Linux (recommended over distro packages for Lua plugins), use the [official AppImage](https://github.com/neovim/neovim/releases):
+
+```sh
+cd ~/Dotfiles && ./install.sh --nvim-appimage
+```
+
+That downloads the latest `nvim-linux-x86_64.appimage` or `nvim-linux-arm64.appimage`, installs it as `/opt/nvim/nvim`, prepends `/opt/nvim` to your `PATH` in `~/.bashrc`, and **skips** the apt `neovim` package. If FUSE is missing, see the [Neovim install docs](https://github.com/neovim/neovim/blob/master/INSTALL.md) (`--appimage-extract`).
+
 This symlinks `starship.toml` and `.vimrc` (as Neovim `init.vim`) into `~/.config`, and appends a guarded `source` line to `~/.bashrc`. Re-running is safe (skips duplicate shell hooks).
 
-On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `neovim`, `bat`, `fzf`, `xclip`, `wl-clipboard`, `git`, `curl`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For fuzzy history and Ctrl-T file search, install fzf from git (below) so `~/.fzf.bash` exists.
+On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `neovim` (unless `--nvim-appimage`), `bat`, `fzf`, `ripgrep`, `xclip`, `wl-clipboard`, `git`, `curl`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For fuzzy history and Ctrl-T file search, install fzf from git (below) so `~/.fzf.bash` exists.
 
 The script also downloads **vim-plug** into `~/.local/share/nvim/site/autoload/plug.vim` if missing. Run `nvim +PlugInstall +qall` once to fetch plugins.
 
 - `./install.sh --zsh` — append the hook to `~/.zshrc` instead of `~/.bashrc`.
 - `./install.sh --git` — also symlink `.gitconfig` into `~` (off by default so an existing config is not overwritten).
 - `./install.sh --no-apt` — skip apt (macOS, containers without sudo, or you manage packages yourself).
+- `./install.sh --nvim-appimage` — Linux only: install latest Neovim from the official GitHub AppImage under `/opt/nvim` and put it on `PATH` (implies no apt `neovim`).
 
 Install **Starship** with its install script — not from apt (see below).
 
@@ -32,7 +41,7 @@ Install **Starship** with its install script — not from apt (see below).
 | `.terminal` | Bash/Zsh aliases and shell functions (sourced from `~/.bashrc` or `~/.zshrc`) |
 | `starship.toml` | [Starship](https://starship.rs) prompt config |
 | `vscode.jsonc` | VSCode `settings.json` |
-| `install.sh` | Symlinks + shell hook for a fresh machine |
+| `install.sh` | Symlinks, shell hook, optional apt, optional Neovim AppImage |
 
 ## Setup (manual / details)
 
@@ -80,7 +89,17 @@ Install **Starship** with its install script — not from apt (see below).
    # macOS
    brew install neovim
 
-   # Ubuntu
+   # Linux — latest (official AppImage, matches neovim/neovim releases)
+   curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.appimage
+   chmod u+x nvim-linux-x86_64.appimage
+   sudo mkdir -p /opt/nvim && sudo mv nvim-linux-x86_64.appimage /opt/nvim/nvim
+   echo 'export PATH="/opt/nvim:$PATH"' >> ~/.bashrc
+   # On arm64: use nvim-linux-arm64.appimage instead.
+
+   # Or let the dotfiles installer do the above:
+   # ./install.sh --nvim-appimage
+
+   # Ubuntu / Debian — older build from apt (fine for the bundled plugin set)
    sudo apt install neovim
    ```
 
@@ -96,7 +115,7 @@ Install **Starship** with its install script — not from apt (see below).
    ln -s /path/to/repo/.vimrc ~/.config/nvim/init.vim
    ```
 
-4. Run `nvim +PlugInstall +qall` once (needs `git` and network).
+4. Run `nvim +PlugInstall +qall` once (needs `git` and network). Plugins are chosen to run on **Neovim from apt** (0.7+): `fzf.vim`, `vim-airline`, `vim-fugitive`, `catppuccin/vim`. For a full Lua/LSP stack you need a newer Neovim (0.10+) and different plugins.
 
 ### VSCode (`vscode.jsonc`)
 

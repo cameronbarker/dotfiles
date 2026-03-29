@@ -6,15 +6,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 USE_ZSH=false
 WITH_GIT=false
 NO_APT=false
+NVIM_APPIMAGE=false
 
 for arg in "$@"; do
   case "$arg" in
     --zsh) USE_ZSH=true ;;
     --git) WITH_GIT=true ;;
     --no-apt) NO_APT=true ;;
+    --nvim-appimage) NVIM_APPIMAGE=true ;;
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: $0 [--zsh] [--git] [--no-apt]" >&2
+      echo "Usage: $0 [--zsh] [--git] [--no-apt] [--nvim-appimage]" >&2
       exit 1
       ;;
   esac
@@ -22,6 +24,7 @@ done
 
 MARKER='# pb-configs dotfiles'
 SOURCE_LINE="source \"${SCRIPT_DIR}/.terminal\""
+NVIM_PATH_MARKER='# pb-configs: Neovim AppImage on PATH'
 
 if [[ "$USE_ZSH" == true ]]; then
   RC_FILE="${HOME}/.zshrc"
@@ -53,7 +56,11 @@ install_apt_packages() {
   # fzf — fuzzy finder (Ctrl-R / Ctrl-T); available on recent Debian/Ubuntu
   # xclip, wl-clipboard — clipboard for cwd alias (X11 and Wayland)
   # git, curl — vim-plug and :PlugInstall clone plugins
-  local packages=(neovim bat fzf xclip wl-clipboard git curl)
+  # neovim omitted when --nvim-appimage (official AppImage under /opt/nvim)
+  local packages=(bat fzf ripgrep xclip wl-clipboard git curl)
+  if [[ "$NVIM_APPIMAGE" != true ]]; then
+    packages=(neovim "${packages[@]}")
+  fi
 
   if [[ "$WITH_GIT" == true ]]; then
     # .gitconfig uses credential.helper = libsecret on Linux
@@ -73,7 +80,72 @@ install_apt_packages() {
   fi
 }
 
+install_nvim_appimage() {
+  [[ "$NVIM_APPIMAGE" == true ]] || return 0
+  if [[ "$(uname -s)" != Linux ]]; then
+    echo "Neovim AppImage is Linux-only; skipped." >&2
+    return 0
+  fi
+
+  local asset
+  case "$(uname -m)" in
+    x86_64) asset=nvim-linux-x86_64.appimage ;;
+    aarch64|arm64) asset=nvim-linux-arm64.appimage ;;
+    *)
+      echo "Neovim AppImage: unsupported architecture $(uname -m); skipped." >&2
+      return 0
+      ;;
+  esac
+
+  if ! command -v curl &>/dev/null; then
+    echo "Neovim AppImage: curl not found. Install curl or run without --no-apt." >&2
+    return 0
+  fi
+
+  local -a priv=()
+  if [[ "$(id -u)" -eq 0 ]]; then
+    priv=()
+  elif command -v sudo &>/dev/null; then
+    priv=(sudo)
+  else
+    echo "Neovim AppImage: need root or sudo to install under /opt/nvim." >&2
+    return 0
+  fi
+
+  local url tmp
+  url="https://github.com/neovim/neovim/releases/latest/download/${asset}"
+  tmp="$(mktemp)"
+  echo "Downloading Neovim AppImage: ${url}"
+  if ! curl -fL --retry 3 -o "${tmp}" "${url}"; then
+    rm -f "${tmp}"
+    echo "Neovim AppImage download failed." >&2
+    return 0
+  fi
+  chmod u+x "${tmp}"
+
+  if [[ ${#priv[@]} -eq 0 ]]; then
+    mkdir -p /opt/nvim
+    install -m 755 "${tmp}" /opt/nvim/nvim
+  else
+    "${priv[@]}" mkdir -p /opt/nvim
+    "${priv[@]}" install -m 755 "${tmp}" /opt/nvim/nvim
+  fi
+  rm -f "${tmp}"
+
+  if [[ -f "${RC_FILE}" ]] && grep -qF "${NVIM_PATH_MARKER}" "${RC_FILE}"; then
+    echo "Neovim AppImage PATH hook already present in ${RC_FILE}"
+  else
+    {
+      printf '\n%s\n' "${NVIM_PATH_MARKER}"
+      printf 'export PATH="/opt/nvim:$PATH"\n'
+    } >>"${RC_FILE}"
+    echo "Appended PATH for /opt/nvim/nvim to ${RC_FILE}"
+  fi
+  echo "Neovim AppImage installed as /opt/nvim/nvim — open a new shell or: source ${RC_FILE}"
+}
+
 install_apt_packages
+install_nvim_appimage
 
 install_vim_plug() {
   local dest="${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim"

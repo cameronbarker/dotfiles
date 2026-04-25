@@ -1,0 +1,39 @@
+{
+  "repo_name": "Dotfiles",
+  "branch": "master",
+  "commit_sha": "cd1fd8482961b9ebfed99981d3fea297b8311cd3",
+  "generated_at": "2026-04-25T21:01:57Z",
+  "dirty_working_tree": {
+    "dirty": true,
+    "summary": "Pre-existing changes observed before generation: modified .codex/AGENTS.md and .terminal; untracked .ai/ and ai-context/."
+  },
+  "source_paths_inspected": [
+    ".ai/context",
+    ".claude/CLAUDE.md",
+    ".claude/agents/code-reviewer.md",
+    ".claude/agents/debugger.md",
+    ".claude/rules/code-style.md",
+    ".claude/rules/git-workflow.md",
+    ".claude/settings.json",
+    ".codex/AGENTS.md",
+    ".codex/skills/generate-ai-context/SKILL.md",
+    ".gitconfig",
+    ".gitignore",
+    ".screenrc",
+    ".terminal",
+    ".vimrc",
+    "README.md",
+    "install.sh",
+    "prompts/notes_system.md",
+    "starship.toml",
+    "uninstall.sh",
+    "vscode.jsonc",
+    "ai-context/README.md",
+    "ai-context/project-overview.md",
+    "ai-context/architecture-map.md",
+    "ai-context/commands.md",
+    "ai-context/integration-points.md",
+    "ai-context/risk-zones.md",
+    "ai-context/generation-metadata.json"
+  ]
+}

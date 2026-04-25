@@ -1,6 +1,6 @@
 ---
 name: maintain-project-docs
-description: Keep project documentation accurate and up to date by inspecting the repository and proposing precise updates to README.md, CHANGELOG.md, and CONTRIBUTING.md with a mandatory approval gate before edits. Use when asked to update docs, fix README, generate changelog updates, update contributing guidance, maintain project docs, or sync docs with repo state.
+description: Keep project documentation accurate and up to date by inspecting the repository and proposing precise updates to README.md and, when present or explicitly requested, CHANGELOG.md and CONTRIBUTING.md, with a mandatory approval gate before edits. Use when asked to update docs, fix README, generate changelog updates, update contributing guidance, maintain project docs, or sync docs with repo state.
 ---
 
 # Maintain Project Docs
@@ -9,7 +9,8 @@ Maintain high-quality project documentation with repository inspection as source
 
 ## Scope
 
-- Target files: `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`.
+- Primary target: `README.md` (expected for most repos).
+- Optional targets: `CHANGELOG.md`, `CONTRIBUTING.md` — inspect and update only when the file exists or the user explicitly asks to add one; creating a new optional file requires the same explicit approval as any doc edit (see Confirmation Gate).
 - Default to minimal, precise edits; preserve existing formatting and structure.
 - Prefer updating existing sections over rewriting large sections.
 - Never invent commands, setup steps, workflows, or environment details.
@@ -27,10 +28,10 @@ Follow repo-specific documentation conventions when they do not conflict with hi
 
 ## Inspection Workflow
 
-1. Inspect documentation files:
+1. Inspect documentation files (skip missing optional files; note their absence in the plan if relevant):
 - `README.md`
-- `CHANGELOG.md`
-- `CONTRIBUTING.md`
+- `CHANGELOG.md` (if present)
+- `CONTRIBUTING.md` (if present)
 
 2. Inspect repository facts needed to validate docs:
 - package/config files that define stack and scripts

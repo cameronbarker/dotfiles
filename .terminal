@@ -7,8 +7,12 @@
 #
 #   2. Install dependencies:
 #        Starship (prompt):   curl -sS https://starship.rs/install.sh | sh
+#        Atuin (history):     default via ./install.sh (binary only; do not use setup.atuin.sh — it duplicates hooks)
+#                             or: brew install atuin
 #        fzf (fuzzy finder):  git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install
-#        z (dir jumping):     git clone https://github.com/rupa/z.git ~/.z-plugin
+#        zoxide (dirs):       apt install zoxide  (default via ./install.sh) — or brew install zoxide
+#        screen:              apt install screen  (default via ./install.sh)
+#        z (legacy):          git clone https://github.com/rupa/z.git ~/.z-plugin  — only if no zoxide
 #        bat (cat w/ color):  apt install bat  # installs as 'batcat' on Debian/Ubuntu
 # =============================================================================
 
@@ -133,7 +137,7 @@ ff() { find . -name "*$1*" 2>/dev/null; }
 # export PATH="$HOME/.local/bin:$PATH"
 
 # -----------------------------------------------------------------------------
-# fzf — fuzzy finder (Ctrl-R history search, Ctrl-T file search)
+# fzf — fuzzy finder (Ctrl-T file search; Ctrl-R stays fzf if Atuin is not installed)
 # -----------------------------------------------------------------------------
 # Debian/apt fzf is often too old for `fzf --bash` / `fzf --zsh` (prints "unknown option").
 # Prefer ~/.fzf.bash from the git installer; otherwise use --bash/--zsh only if they work.
@@ -167,9 +171,39 @@ if command -v fzf &>/dev/null; then
 fi
 
 # -----------------------------------------------------------------------------
-# z — jump to frecent directories
+# Atuin — shell history (Ctrl-R); load after fzf so Atuin wins over fzf’s Ctrl-R.
+# Ctrl-T remains fzf file search. Binary: ~/.atuin/bin (see ./install.sh).
 # -----------------------------------------------------------------------------
-if [[ -f ~/.z-plugin/z.sh ]]; then
+if [[ -d "${HOME}/.atuin/bin" ]] && [[ ":${PATH}:" != *":${HOME}/.atuin/bin:"* ]]; then
+  export PATH="${HOME}/.atuin/bin:${PATH}"
+fi
+if command -v atuin &>/dev/null; then
+  if [[ -n "${BASH_VERSION:-}" ]]; then
+    if [[ ! -f "${HOME}/.bash-preexec.sh" ]] && command -v curl &>/dev/null; then
+      curl -fsSL -o "${HOME}/.bash-preexec.sh" \
+        https://raw.githubusercontent.com/rcaloras/bash-preexec/master/bash-preexec.sh 2>/dev/null || true
+    fi
+    if [[ -f "${HOME}/.bash-preexec.sh" ]]; then
+      # shellcheck source=/dev/null
+      source "${HOME}/.bash-preexec.sh"
+    fi
+    eval "$(atuin init bash)"
+  elif [[ -n "${ZSH_VERSION:-}" ]]; then
+    eval "$(atuin init zsh)"
+  fi
+fi
+
+# -----------------------------------------------------------------------------
+# zoxide — smart directory jump (z, zi); falls back to rupa/z if zoxide not installed
+# -----------------------------------------------------------------------------
+if command -v zoxide &>/dev/null; then
+  if [[ -n "${BASH_VERSION:-}" ]]; then
+    eval "$(zoxide init bash)"
+  elif [[ -n "${ZSH_VERSION:-}" ]]; then
+    eval "$(zoxide init zsh)"
+  fi
+elif [[ -f ~/.z-plugin/z.sh ]]; then
+  # shellcheck source=/dev/null
   source ~/.z-plugin/z.sh
 fi
 

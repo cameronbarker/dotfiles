@@ -22,6 +22,7 @@ By default the script also installs **[Atuin](https://atuin.sh)** (official bina
 The script also downloads **vim-plug** into `~/.local/share/nvim/site/autoload/plug.vim` if missing. Run `nvim +PlugInstall +qall` once to fetch plugins.
 
 - `./install.sh --zsh` — append the hook to `~/.zshrc` instead of `~/.bashrc`.
+  Also installs `agkozak/zsh-z` to `~/.zsh-z` if missing.
 - `./install.sh --git` — also symlink `.gitconfig` into `~` (off by default so an existing config is not overwritten).
 - `./install.sh --no-apt` — skip apt (macOS, containers without sudo, or you manage packages yourself).
 - `./install.sh --no-nvim-appimage` — on Debian/Ubuntu, install **`neovim` from apt** instead of the extracted AppImage under `/opt/nvim` (ignored on non-Linux).
@@ -52,7 +53,7 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
 |------|-------------|
 | `.gitconfig` | Git config — aliases, delta pager, credential helper |
 | `.vimrc` | Neovim config with vim-plug |
-| `.terminal` | Bash/Zsh aliases, zoxide, fzf (files), Atuin when installed, Starship |
+| `.terminal` | Bash/Zsh aliases, zsh-z (zsh), zoxide fallback, fzf (files), Atuin when installed, Starship |
 | `.screenrc` | GNU screen defaults (symlinked to `~`) |
 | `starship.toml` | [Starship](https://starship.rs) prompt config |
 | `vscode.jsonc` | VSCode `settings.json` |
@@ -78,6 +79,9 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
 
    # z (directory jumping)
    git clone https://github.com/rupa/z.git ~/.z-plugin
+
+   # zsh-z (directory jumping for zsh; preferred in .terminal when present)
+   git clone --depth 1 https://github.com/agkozak/zsh-z ~/.zsh-z
 
    # bat (cat with syntax highlighting) — Debian/Ubuntu
    sudo apt install bat

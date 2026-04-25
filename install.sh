@@ -204,6 +204,22 @@ ln -sf "${SCRIPT_DIR}/.vimrc" "${HOME}/.config/nvim/init.vim"
 
 install_vim_plug
 
+install_zsh_z() {
+  [[ "$USE_ZSH" == true ]] || return 0
+  if [[ -f "${HOME}/.zsh-z/zsh-z.plugin.zsh" ]]; then
+    return 0
+  fi
+  if ! command -v git &>/dev/null; then
+    echo "Skipping zsh-z install: git not found." >&2
+    return 0
+  fi
+  echo "Installing zsh-z to ${HOME}/.zsh-z"
+  git clone --depth 1 https://github.com/agkozak/zsh-z "${HOME}/.zsh-z" || {
+    echo "zsh-z install failed." >&2
+    return 0
+  }
+}
+
 install_atuin() {
   [[ "$ATUIN_INSTALL" == true ]] || return 0
   if command -v atuin &>/dev/null || [[ -x "${HOME}/.atuin/bin/atuin" ]]; then
@@ -228,6 +244,7 @@ install_atuin() {
   fi
 }
 
+install_zsh_z
 install_atuin
 
 install_claude_config() {

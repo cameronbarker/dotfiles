@@ -1,0 +1,85 @@
+# AI Context Policy
+
+## Purpose
+
+This file defines how AI tools should use project context in this repository.
+GPT is used for planning, discussion, comparison, and high-level reasoning.
+Codex is used for repo-grounded inspection, verification, edits, and command execution.
+
+## ai-context Location and Ownership
+
+`ai-context/` must live at the repository root.
+It is generated or refreshed by Codex through a global skill, script, or equivalent automation.
+It is not manually maintained source of truth.
+
+## Role of ai-context
+
+`ai-context/` provides orientation context for GPT discussions.
+It helps GPT reason at the correct level before handing execution back to Codex.
+It is not a substitute for Codex inspecting the actual codebase before relying on implementation details.
+
+## GPT-Relevant Context
+
+Curated `ai-context/` documents should include:
+
+- project purpose and boundaries
+- stack, framework, runtime, and package manager
+- major directories and their responsibilities
+- important entrypoints, routes, and flows
+- domain models, entities, and relationships
+- API, data, and integration points
+- dev, test, and build commands
+- coding conventions and naming patterns
+- known risk zones and areas requiring inspect-only review
+- links or paths to ADRs, README files, schemas, routes, and key config files
+
+## Non-Goals
+
+Do not include:
+
+- large code dumps
+- secrets or environment values
+- full dependency lockfiles
+- generated build artifacts
+- stale or speculative descriptions
+- implementation claims without source paths
+
+## Freshness and Metadata
+
+Generated `ai-context/` must include:
+
+- repository name
+- branch
+- commit SHA
+- generation timestamp
+- dirty working tree state
+
+Context is assumed stale unless its metadata matches the current repository state.
+
+## GPT Sources Usage
+
+GPT Project Sources should contain only curated `ai-context/` documents.
+Do not upload the full repository as GPT Project Sources.
+Sources are cached context, not guaranteed truth.
+
+## Codex Usage Rules
+
+Codex is the source of truth for implementation details.
+Codex must use inspect-only mode first for:
+
+- authentication and authorization
+- payments
+- secrets or credentials
+- infrastructure
+- databases and migrations
+- backups
+- destructive operations
+
+## Operating Workflow
+
+When accurate context is needed:
+
+1. Run an `ai-context/` refresh via Codex.
+2. Review the generated `ai-context/` changes.
+3. Sync `ai-context/` to GPT Project Sources.
+4. Reference the commit SHA when using GPT.

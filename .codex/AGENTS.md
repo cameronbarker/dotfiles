@@ -59,6 +59,32 @@ When generating a ChatGPT handoff prompt:
 
 If I explicitly say "Codex, handle this here", proceed in Codex even if ChatGPT could help.
 
+## Git Guidance
+
+Codex may use read-only git commands for context:
+- `git status`
+- `git diff`
+- `git diff --staged`
+- `git log --oneline -n 10`
+- `git branch --show-current`
+- `git rev-parse HEAD`
+- `git ls-files`
+
+Codex must not perform git state changes unless I explicitly authorize them. This includes:
+- Creating or switching branches
+- Staging files
+- Committing
+- Pushing
+- Merging
+- Rebasing
+- Resetting
+- Cleaning
+- Stashing
+
+For cross-cutting or structural changes, Codex may recommend branch names, commit messages, and exact commands, but must not execute them without approval.
+
+Before any destructive or history-rewriting git operation, Codex must stop and ask for confirmation.
+
 ## Language Preferences
 
 When writing one-off scripts, automation, or local tooling:

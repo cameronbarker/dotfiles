@@ -1,0 +1,5 @@
+# GNU screen — dotfiles defaults
+startup_message off
+defscrollback 10000
+altscreen on
+autodetach on

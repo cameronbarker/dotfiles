@@ -13,7 +13,7 @@ cd ~/Dotfiles && ./install.sh
 
 On **Linux**, `./install.sh` installs Neovim from the [official AppImage](https://github.com/neovim/neovim/releases) by default: it **extracts** to `/opt/nvim` (binaries under `/opt/nvim/usr/bin/nvim`) and prepends **`/opt/nvim/usr/bin`** to your `PATH` in `~/.bashrc`. Extraction avoids **FUSE**, which many **LXC / Proxmox / Jellyfin** hosts lack. The apt **`neovim`** package is **not** installed unless you pass **`--no-nvim-appimage`**. On **macOS**, the AppImage step is skipped (install Neovim with Homebrew, etc.).
 
-This symlinks `starship.toml` and `.vimrc` (as Neovim `init.vim`) into `~/.config`, **`~/.screenrc`**, and appends a guarded `source` line to `~/.bashrc`. Re-running is safe (skips duplicate shell hooks).
+This symlinks `starship.toml` and `.vimrc` (as Neovim `init.vim`) into `~/.config`, **`~/.screenrc`**, links Claude/Codex config into `~/.claude` and `~/.codex/AGENTS.md`, and appends a guarded `source` line to `~/.bashrc`. Re-running is safe (skips duplicate shell hooks).
 
 On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `bat`, `fzf`, `ripgrep`, **`zoxide`**, **`screen`**, `xclip`, `wl-clipboard`, `git`, `curl`, and **`neovim` only if** `--no-nvim-appimage`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For **Ctrl-T** file search, install fzf from git (below) so `~/.fzf.bash` exists.
 
@@ -33,7 +33,7 @@ Install **Starship** with its install script — not from apt (see below).
 
 ### Uninstall
 
-From the repo root, [`uninstall.sh`](uninstall.sh) removes what `install.sh` added (only symlinks that still point at **this** clone):
+From the repo root, [`uninstall.sh`](uninstall.sh) removes repo-owned symlinks/markers it explicitly manages (when links still point at **this** clone):
 
 ```sh
 cd ~/Dotfiles && ./uninstall.sh --git --nvim-appimage --atuin --vim-plug --plugged
@@ -45,7 +45,7 @@ cd ~/Dotfiles && ./uninstall.sh --git --nvim-appimage --atuin --vim-plug --plugg
 - **`--vim-plug`** — remove `~/.local/share/nvim/site/autoload/plug.vim`.
 - **`--plugged`** — delete `~/.vim/plugged` (all vim-plug clones).
 
-Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. **Apt packages are not removed.**
+Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. `~/.codex/AGENTS.md` is removed when it points at this clone. Claude symlinks under `~/.claude` are not currently removed by `uninstall.sh`. **Apt packages are not removed.**
 
 ## Files
 

@@ -20,7 +20,7 @@ Generate or refresh a concise `ai-context/` folder at the target repository root
 
 Before generating docs, read any repo-local guidance that exists:
 
-- `AGENTS.md`
+- `AGENTS.md` (if present)
 - `.ai/context`
 - Existing `ai-context/README.md` or `ai-context/generation-metadata.json`
 

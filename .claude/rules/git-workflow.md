@@ -10,6 +10,7 @@ description: Git and GitHub workflow conventions
 - Keep subject line under 72 characters
 - No `--no-verify` or `--no-gpg-sign` unless explicitly asked
 - Create new commits rather than amending unless explicitly asked to amend
+- Ask for explicit approval before any git state-changing command (`git add`, `git commit`, `git stash`, `git push`, `git merge`, `git rebase`, `git reset`, `git clean`)
 
 ## Branching
 - Ask before force-push, reset --hard, or any destructive git operation

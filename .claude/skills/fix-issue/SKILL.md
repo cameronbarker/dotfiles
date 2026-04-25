@@ -12,5 +12,6 @@ Fetch and fix GitHub issue #$ARGUMENTS.
 3. Reproduce the problem if possible (run tests, check logs)
 4. Implement the minimal fix required — no refactoring beyond the scope of the issue
 5. Run existing tests to confirm nothing regresses
-6. Create a commit: `fix: <issue title in lowercase>` referencing the issue
-7. Open a PR with `gh pr create` — include "Closes #$ARGUMENTS" in the body
+6. Stop and ask for explicit approval before any git state-changing command (`git add`, `git commit`, `git push`, `git stash`, `gh pr create`)
+7. After approval, create a commit: `fix: <issue title in lowercase>` referencing the issue
+8. After approval, open a PR with `gh pr create` — include "Closes #$ARGUMENTS" in the body

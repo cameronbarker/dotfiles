@@ -28,7 +28,7 @@ Inspect agent/config guidance, identify conflicts or drift, and propose narrow u
 
 Before proposing changes, read and summarize applicable repo guidance:
 
-- `AGENTS.md`
+- `AGENTS.md` (if present)
 - `.codex/AGENTS.md`
 - `.ai/context`
 - `.claude/CLAUDE.md` (if present)

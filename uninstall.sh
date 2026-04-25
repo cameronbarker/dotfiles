@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reverse what install.sh added: symlinks, shell rc blocks, optional AppImage / vim-plug / plugged.
+# Reverse what install.sh added: symlinks, shell rc blocks, optional AppImage / Atuin / vim-plug / plugged.
 # Does not remove apt packages (you may still want neovim, git, etc.).
 set -euo pipefail
 
@@ -8,6 +8,7 @@ WITH_GIT=false
 REMOVE_APPIMAGE=false
 REMOVE_VIM_PLUG=false
 REMOVE_PLUGGED=false
+REMOVE_ATUIN=false
 
 for arg in "$@"; do
   case "$arg" in
@@ -15,9 +16,10 @@ for arg in "$@"; do
     --nvim-appimage) REMOVE_APPIMAGE=true ;;
     --vim-plug) REMOVE_VIM_PLUG=true ;;
     --plugged) REMOVE_PLUGGED=true ;;
+    --atuin) REMOVE_ATUIN=true ;;
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: $0 [--git] [--nvim-appimage] [--vim-plug] [--plugged]" >&2
+      echo "Usage: $0 [--git] [--nvim-appimage] [--vim-plug] [--plugged] [--atuin]" >&2
       exit 1
       ;;
   esac
@@ -83,6 +85,8 @@ strip_rc_blocks() {
 
 remove_symlink_if_ours "${HOME}/.config/starship.toml" "${SCRIPT_DIR}/starship.toml"
 remove_symlink_if_ours "${HOME}/.config/nvim/init.vim" "${SCRIPT_DIR}/.vimrc"
+remove_symlink_if_ours "${HOME}/.screenrc" "${SCRIPT_DIR}/.screenrc"
+remove_symlink_if_ours "${HOME}/.codex/AGENTS.md" "${SCRIPT_DIR}/.codex/AGENTS.md"
 
 if [[ "$WITH_GIT" == true ]]; then
   remove_symlink_if_ours "${HOME}/.gitconfig" "${SCRIPT_DIR}/.gitconfig"
@@ -122,6 +126,16 @@ if [[ "$REMOVE_PLUGGED" == true ]]; then
     rm -rf "${HOME}/.vim/plugged"
     echo "Removed ~/.vim/plugged"
   fi
+fi
+
+if [[ "$REMOVE_ATUIN" == true ]]; then
+  if [[ -d "${HOME}/.atuin" ]]; then
+    rm -rf "${HOME}/.atuin"
+    echo "Removed ~/.atuin"
+  else
+    echo "Skip: ~/.atuin not found"
+  fi
+  echo "Tip: remove ~/.bash-preexec.sh manually if you only used it for Atuin."
 fi
 
 echo "Done. Apt packages were not removed. Re-open your shell (or source ~/.bashrc)."

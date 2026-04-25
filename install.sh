@@ -8,6 +8,8 @@ WITH_GIT=false
 NO_APT=false
 # On Linux, Neovim comes from the official extracted AppImage under /opt/nvim (no FUSE).
 NVIM_APPIMAGE=true
+# Atuin shell history (binary + bash-preexec); hooks live in .terminal, not duplicated in rc.
+ATUIN_INSTALL=true
 
 for arg in "$@"; do
   case "$arg" in
@@ -16,9 +18,10 @@ for arg in "$@"; do
     --no-apt) NO_APT=true ;;
     --no-nvim-appimage) NVIM_APPIMAGE=false ;;
     --nvim-appimage) ;; # default; kept for old scripts / docs
+    --no-atuin) ATUIN_INSTALL=false ;;
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: $0 [--zsh] [--git] [--no-apt] [--no-nvim-appimage]" >&2
+      echo "Usage: $0 [--zsh] [--git] [--no-apt] [--no-nvim-appimage] [--no-atuin]" >&2
       exit 1
       ;;
   esac
@@ -59,7 +62,7 @@ install_apt_packages() {
   # xclip, wl-clipboard — clipboard for cwd alias (X11 and Wayland)
   # git, curl — vim-plug and :PlugInstall clone plugins
   # neovim from apt only with --no-nvim-appimage (default is extracted AppImage on Linux)
-  local packages=(bat fzf ripgrep xclip wl-clipboard git curl)
+  local packages=(bat fzf ripgrep zoxide screen xclip wl-clipboard git curl)
   if [[ "$NVIM_APPIMAGE" != true ]]; then
     packages=(neovim "${packages[@]}")
   fi
@@ -195,10 +198,101 @@ install_vim_plug() {
 
 mkdir -p "${HOME}/.config"
 ln -sf "${SCRIPT_DIR}/starship.toml" "${HOME}/.config/starship.toml"
+ln -sf "${SCRIPT_DIR}/.screenrc" "${HOME}/.screenrc"
 mkdir -p "${HOME}/.config/nvim"
 ln -sf "${SCRIPT_DIR}/.vimrc" "${HOME}/.config/nvim/init.vim"
 
 install_vim_plug
+
+install_atuin() {
+  [[ "$ATUIN_INSTALL" == true ]] || return 0
+  if command -v atuin &>/dev/null || [[ -x "${HOME}/.atuin/bin/atuin" ]]; then
+    return 0
+  fi
+  if ! command -v curl &>/dev/null; then
+    echo "Skipping Atuin: curl not found." >&2
+    return 0
+  fi
+  echo "Installing Atuin (binary to ~/.atuin/bin; hooks via .terminal — not setup.atuin.sh)"
+  if ! curl --proto '=https' --tlsv1.2 -LsSf https://github.com/atuinsh/atuin/releases/latest/download/atuin-installer.sh | sh; then
+    echo "Atuin installer failed." >&2
+    return 0
+  fi
+  # Bash needs bash-preexec for Atuin’s preexec hooks; .terminal sources it before `atuin init bash`.
+  if [[ ! -f "${HOME}/.bash-preexec.sh" ]]; then
+    curl -fsSL -o "${HOME}/.bash-preexec.sh" \
+      https://raw.githubusercontent.com/rcaloras/bash-preexec/master/bash-preexec.sh || true
+  fi
+  if [[ -x "${HOME}/.atuin/bin/atuin" ]]; then
+    "${HOME}/.atuin/bin/atuin" import auto 2>/dev/null || true
+  fi
+}
+
+install_atuin
+
+install_claude_config() {
+  local claude_src="${SCRIPT_DIR}/.claude"
+  local claude_dest="${HOME}/.claude"
+
+  if [[ ! -d "${claude_src}" ]]; then
+    return 0
+  fi
+
+  mkdir -p "${claude_dest}"
+
+  # Symlink config files and directories. Skip runtime data dirs (sessions, transcripts, etc.)
+  local items=(CLAUDE.md settings.json rules skills agents)
+  for item in "${items[@]}"; do
+    local src="${claude_src}/${item}"
+    local dest="${claude_dest}/${item}"
+
+    [[ -e "${src}" ]] || continue
+
+    if [[ -L "${dest}" ]]; then
+      # Already a symlink — update it
+      ln -sf "${src}" "${dest}"
+    elif [[ -e "${dest}" ]]; then
+      # Real file/dir exists — back it up before symlinking
+      local backup="${dest}.bak.$(date +%Y%m%d%H%M%S)"
+      echo "Backing up existing ${dest} to ${backup}"
+      mv "${dest}" "${backup}"
+      ln -sf "${src}" "${dest}"
+    else
+      ln -sf "${src}" "${dest}"
+    fi
+  done
+
+  echo "Symlinked Claude Code config from ${claude_src} to ${claude_dest}"
+}
+
+install_claude_config
+
+install_codex_config() {
+  local codex_src="${SCRIPT_DIR}/.codex/AGENTS.md"
+  local codex_dest_dir="${HOME}/.codex"
+  local codex_dest="${codex_dest_dir}/AGENTS.md"
+
+  if [[ ! -f "${codex_src}" ]]; then
+    return 0
+  fi
+
+  mkdir -p "${codex_dest_dir}"
+
+  if [[ -L "${codex_dest}" ]]; then
+    ln -sf "${codex_src}" "${codex_dest}"
+  elif [[ -e "${codex_dest}" ]]; then
+    local backup="${codex_dest}.bak.$(date +%Y%m%d%H%M%S)"
+    echo "Backing up existing ${codex_dest} to ${backup}"
+    mv "${codex_dest}" "${backup}"
+    ln -sf "${codex_src}" "${codex_dest}"
+  else
+    ln -sf "${codex_src}" "${codex_dest}"
+  fi
+
+  echo "Symlinked Codex AGENTS.md from ${codex_src} to ${codex_dest}"
+}
+
+install_codex_config
 
 if [[ "$WITH_GIT" == true ]]; then
   ln -sf "${SCRIPT_DIR}/.gitconfig" "${HOME}/.gitconfig"
@@ -213,7 +307,7 @@ else
   echo "Appended source hook to ${RC_FILE}"
 fi
 
-echo "Symlinked starship.toml and nvim init.vim from ${SCRIPT_DIR}"
+echo "Symlinked starship.toml, nvim init.vim, .screenrc, Claude Code config, and Codex config from ${SCRIPT_DIR}"
 if [[ "$WITH_GIT" != true ]]; then
   echo "Tip: run with --git to symlink .gitconfig (skipped by default)."
 fi

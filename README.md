@@ -51,6 +51,9 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
 
 | File | Description |
 |------|-------------|
+| `AGENTS.md` | Contributor/agent guidelines — layout, validation, PRs, security |
+| `CHANGELOG.md` | Notable changes (grouped; not a raw commit log) |
+| `CONTRIBUTING.md` | How to contribute — validation, PRs, docs, safety |
 | `.gitconfig` | Git config — aliases, delta pager, credential helper |
 | `.vimrc` | Neovim config with vim-plug |
 | `.terminal` | Bash/Zsh aliases, zsh-z (zsh), zoxide fallback, fzf (files), Atuin when installed, Starship |

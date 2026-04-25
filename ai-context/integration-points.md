@@ -34,8 +34,9 @@ Observed in `.claude/settings.json`:
 
 ## AI Context Integration
 
-Observed in `.ai/context`, `.codex/AGENTS.md`, `.codex/skills/generate-ai-context/SKILL.md`:
+Observed in `.ai/context`, `.codex/AGENTS.md`, `.codex/skills/generate-ai-context/SKILL.md`, `.codex/skills/maintain-agent-config/SKILL.md`, `.codex/skills/0-maintain-project-workflow/SKILL.md`:
 
 - `ai-context/` is generated orientation data for GPT sources.
 - Codex remains the execution and verification layer.
 - For risky domains, inspect-only pass is required before action.
+- Maintenance workflow skills enforce proposal/approval gates before guidance edits.

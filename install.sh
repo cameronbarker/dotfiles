@@ -59,10 +59,11 @@ install_apt_packages() {
   # neovim — .terminal aliases vim to nvim; .vimrc is for Neovim
   # bat — syntax-highlighted cat (.terminal); Debian binary is batcat
   # fzf — fuzzy finder (Ctrl-R / Ctrl-T); available on recent Debian/Ubuntu
+  # moar — default pager used by PAGER and MANPAGER in .terminal
   # xclip, wl-clipboard — clipboard for cwd alias (X11 and Wayland)
   # git, curl — vim-plug and :PlugInstall clone plugins
   # neovim from apt only with --no-nvim-appimage (default is extracted AppImage on Linux)
-  local packages=(bat fzf ripgrep zoxide screen xclip wl-clipboard git curl)
+  local packages=(bat fzf ripgrep zoxide screen moar xclip wl-clipboard git curl)
   if [[ "$NVIM_APPIMAGE" != true ]]; then
     packages=(neovim "${packages[@]}")
   fi
@@ -201,6 +202,10 @@ ln -sf "${SCRIPT_DIR}/starship.toml" "${HOME}/.config/starship.toml"
 ln -sf "${SCRIPT_DIR}/.screenrc" "${HOME}/.screenrc"
 mkdir -p "${HOME}/.config/nvim"
 ln -sf "${SCRIPT_DIR}/.vimrc" "${HOME}/.config/nvim/init.vim"
+mkdir -p "${HOME}/.config/kitty"
+ln -sf "${SCRIPT_DIR}/kitty/.config/kitty/kitty.conf" "${HOME}/.config/kitty/kitty.conf"
+mkdir -p "${HOME}/.config/pb-terminal"
+ln -sf "${SCRIPT_DIR}/terminal.d/kitty.sh" "${HOME}/.config/pb-terminal/kitty.sh"
 
 install_vim_plug
 
@@ -311,6 +316,28 @@ install_codex_config() {
 
 install_codex_config
 
+install_tmux_config() {
+  local tmux_src="${SCRIPT_DIR}/.tmux.conf"
+  local tmux_dest="${HOME}/.tmux.conf"
+
+  if [[ ! -f "${tmux_src}" ]]; then
+    return 0
+  fi
+
+  if [[ -L "${tmux_dest}" ]]; then
+    ln -sf "${tmux_src}" "${tmux_dest}"
+  elif [[ -e "${tmux_dest}" ]]; then
+    local backup="${tmux_dest}.bak.$(date +%Y%m%d%H%M%S)"
+    echo "Backing up existing ${tmux_dest} to ${backup}"
+    mv "${tmux_dest}" "${backup}"
+    ln -sf "${tmux_src}" "${tmux_dest}"
+  else
+    ln -sf "${tmux_src}" "${tmux_dest}"
+  fi
+}
+
+install_tmux_config
+
 if [[ "$WITH_GIT" == true ]]; then
   ln -sf "${SCRIPT_DIR}/.gitconfig" "${HOME}/.gitconfig"
 fi
@@ -324,7 +351,7 @@ else
   echo "Appended source hook to ${RC_FILE}"
 fi
 
-echo "Symlinked starship.toml, nvim init.vim, .screenrc, Claude Code config, and Codex config from ${SCRIPT_DIR}"
+echo "Symlinked starship.toml, nvim init.vim, kitty.conf, .screenrc, Claude Code config, and Codex config from ${SCRIPT_DIR}"
 if [[ "$WITH_GIT" != true ]]; then
   echo "Tip: run with --git to symlink .gitconfig (skipped by default)."
 fi

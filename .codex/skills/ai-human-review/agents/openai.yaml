@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Human Review"
+  short_description: "Run explicit human approval loops in tmux"
+  default_prompt: "Use this skill to create review artifacts, open tmux review panes, wait for explicit machine-detectable approval, and return only approved items for execution."

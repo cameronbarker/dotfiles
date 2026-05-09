@@ -13,9 +13,9 @@ cd ~/Dotfiles && ./install.sh
 
 On **Linux**, `./install.sh` installs Neovim from the [official AppImage](https://github.com/neovim/neovim/releases) by default: it **extracts** to `/opt/nvim` (binaries under `/opt/nvim/usr/bin/nvim`) and prepends **`/opt/nvim/usr/bin`** to your `PATH` in `~/.bashrc`. Extraction avoids **FUSE**, which many **LXC / Proxmox / Jellyfin** hosts lack. The apt **`neovim`** package is **not** installed unless you pass **`--no-nvim-appimage`**. On **macOS**, the AppImage step is skipped (install Neovim with Homebrew, etc.).
 
-This symlinks `starship.toml` and `.vimrc` (as Neovim `init.vim`) into `~/.config`, **`~/.screenrc`**, links Claude/Codex config into `~/.claude` and `~/.codex/AGENTS.md`, and appends a guarded `source` line to `~/.bashrc`. Re-running is safe (skips duplicate shell hooks).
+This symlinks `starship.toml`, `.vimrc` (as Neovim `init.vim`), and `kitty/.config/kitty/kitty.conf` into `~/.config`, **`~/.screenrc`**, links Claude/Codex config into `~/.claude` and `~/.codex/AGENTS.md`, and appends a guarded `source` line to `~/.bashrc`. Re-running is safe (skips duplicate shell hooks).
 
-On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `bat`, `fzf`, `ripgrep`, **`zoxide`**, **`screen`**, `xclip`, `wl-clipboard`, `git`, `curl`, and **`neovim` only if** `--no-nvim-appimage`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For **Ctrl-T** file search, install fzf from git (below) so `~/.fzf.bash` exists.
+On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `bat`, `fzf`, `ripgrep`, **`zoxide`**, **`screen`**, `moar`, `xclip`, `wl-clipboard`, `git`, `curl`, and **`neovim` only if** `--no-nvim-appimage`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For **Ctrl-T** file search, install fzf from git (below) so `~/.fzf.bash` exists.
 
 By default the script also installs **[Atuin](https://atuin.sh)** (official binary to `~/.atuin/bin`, plus `~/.bash-preexec.sh` for Bash). Hooks run from `.terminal` only — **do not** use `https://setup.atuin.sh` (it appends duplicate `atuin init` lines to your rc). Pass **`--no-atuin`** to skip. Optional: `atuin register` / `atuin login` for sync ([docs](https://docs.atuin.sh)).
 
@@ -56,7 +56,9 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
 | `CONTRIBUTING.md` | How to contribute — validation, PRs, docs, safety |
 | `.gitconfig` | Git config — aliases, delta pager, credential helper |
 | `.vimrc` | Neovim config with vim-plug |
-| `.terminal` | Bash/Zsh aliases, zsh-z (zsh), zoxide fallback, fzf (files), Atuin when installed, Starship |
+| `.terminal` | Bash/Zsh aliases, pager defaults (`PAGER`/`MANPAGER` to `moar`), zsh-z (zsh), zoxide fallback, fzf (files), Atuin when installed, Starship |
+| `kitty/.config/kitty/kitty.conf` | Kitty config (socket-only remote control via local Unix socket) |
+| `terminal.d/kitty.sh` | Kitty-only helper commands (`krc`, split/tab/focus, zsh slash aliases) |
 | `.screenrc` | GNU screen defaults (symlinked to `~`) |
 | `starship.toml` | [Starship](https://starship.rs) prompt config |
 | `vscode.jsonc` | VSCode `settings.json` |
@@ -89,6 +91,9 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
    # bat (cat with syntax highlighting) — Debian/Ubuntu
    sudo apt install bat
 
+   # moar (default pager used by PAGER and MANPAGER in .terminal)
+   sudo apt install moar
+
    # zoxide + screen — also pulled in by ./install.sh on Debian/Ubuntu
    sudo apt install zoxide screen
    # macOS: brew install zoxide   (screen is usually preinstalled)
@@ -98,7 +103,22 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
    ```sh
    echo 'source /path/to/repo/.terminal' >> ~/.bashrc
    mkdir -p ~/.config && ln -s /path/to/repo/starship.toml ~/.config/starship.toml
+   mkdir -p ~/.config/kitty && ln -s /path/to/repo/kitty/.config/kitty/kitty.conf ~/.config/kitty/kitty.conf
    ```
+
+3. Kitty remote control helpers are isolated in `terminal.d/kitty.sh` and auto-loaded from `.terminal` only when running inside Kitty (`KITTY_PID`/`KITTY_WINDOW_ID`):
+   ```sh
+   export KITTY_LISTEN_ON="unix:/tmp/kitty"   # optional override; default is unix:/tmp/kitty
+   kls       # kitty @ ls
+   kvsplit   # vertical split (Kitty "window")
+   khsplit   # horizontal split
+   ktab      # new tab
+   ```
+   Optional force-enable outside Kitty for testing:
+   ```sh
+   export PB_ENABLE_KITTY_HELPERS=1
+   ```
+   These helpers control local Kitty UI state only; they do not replace tmux/session persistence.
 
 ### Git (`.gitconfig`)
 

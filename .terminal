@@ -428,7 +428,9 @@ fi
 # -----------------------------------------------------------------------------
 # PATH additions (add project-specific paths here)
 # -----------------------------------------------------------------------------
-# export PATH="$HOME/.local/bin:$PATH"
+if [[ -d "${HOME}/.local/bin" ]] && [[ ":${PATH}:" != *":${HOME}/.local/bin:"* ]]; then
+  export PATH="${HOME}/.local/bin:${PATH}"
+fi
 
 # -----------------------------------------------------------------------------
 # fzf — fuzzy finder (Ctrl-T file search; Ctrl-R stays fzf if Atuin is not installed)

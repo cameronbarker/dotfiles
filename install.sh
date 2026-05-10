@@ -63,7 +63,7 @@ install_apt_packages() {
   # xclip, wl-clipboard — clipboard for cwd alias (X11 and Wayland)
   # git, curl — vim-plug and :PlugInstall clone plugins
   # neovim from apt only with --no-nvim-appimage (default is extracted AppImage on Linux)
-  local packages=(bat fzf ripgrep zoxide screen xclip wl-clipboard git curl)
+  local packages=(bat fzf ripgrep zoxide screen tmux unzip xclip wl-clipboard git curl)
   if [[ "$NVIM_APPIMAGE" != true ]]; then
     packages=(neovim "${packages[@]}")
   fi
@@ -83,6 +83,40 @@ install_apt_packages() {
     DEBIAN_FRONTEND=noninteractive apt-get install -y "${packages[@]}"
   else
     "${priv[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y "${packages[@]}"
+  fi
+}
+
+install_unrar() {
+  if command -v unrar &>/dev/null; then
+    return 0
+  fi
+  if [[ "$NO_APT" == true ]] || [[ ! -f /etc/debian_version ]]; then
+    return 0
+  fi
+
+  local -a priv=()
+  if [[ "$(id -u)" -eq 0 ]]; then
+    priv=()
+  elif command -v sudo &>/dev/null; then
+    priv=(sudo)
+  else
+    echo "Skipping unrar install: not root and sudo not found." >&2
+    return 0
+  fi
+
+  echo "Installing unrar (fallback to unrar-free if needed)..."
+  if [[ ${#priv[@]} -eq 0 ]]; then
+    if ! DEBIAN_FRONTEND=noninteractive apt-get install -y unrar; then
+      DEBIAN_FRONTEND=noninteractive apt-get install -y unrar-free || {
+        echo "Skipping unrar install: neither unrar nor unrar-free could be installed." >&2
+      }
+    fi
+  else
+    if ! "${priv[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y unrar; then
+      "${priv[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y unrar-free || {
+        echo "Skipping unrar install: neither unrar nor unrar-free could be installed." >&2
+      }
+    fi
   fi
 }
 
@@ -180,6 +214,7 @@ install_nvim_appimage() {
 }
 
 install_apt_packages
+install_unrar
 
 install_moor() {
   if command -v moor &>/dev/null; then
@@ -257,6 +292,24 @@ install_moor() {
 
 install_moor
 install_nvim_appimage
+
+install_starship() {
+  if command -v starship &>/dev/null; then
+    return 0
+  fi
+  if ! command -v curl &>/dev/null; then
+    echo "Skipping Starship install: curl not found." >&2
+    return 0
+  fi
+  echo "Installing Starship to ${HOME}/.local/bin"
+  mkdir -p "${HOME}/.local/bin"
+  if ! curl -sS https://starship.rs/install.sh | sh -s -- -y -b "${HOME}/.local/bin"; then
+    echo "Starship install failed." >&2
+    return 0
+  fi
+}
+
+install_starship
 
 install_vim_plug() {
   local dest="${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim"

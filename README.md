@@ -18,7 +18,7 @@ apt update && apt install -y git && git clone https://github.com/cameronbarker/d
 
 On **Linux**, `./install.sh` installs Neovim from the [official AppImage](https://github.com/neovim/neovim/releases) by default: it **extracts** to `/opt/nvim` (binaries under `/opt/nvim/usr/bin/nvim`) and prepends **`/opt/nvim/usr/bin`** to your `PATH` in `~/.zshrc`. Extraction avoids **FUSE**, which many **LXC / Proxmox / Jellyfin** hosts lack. The apt **`neovim`** package is **not** installed unless you pass **`--no-nvim-appimage`**. On **macOS**, the AppImage step is skipped (install Neovim with Homebrew, etc.).
 
-This symlinks `starship.toml`, `.vimrc` (as Neovim `init.vim`), and `kitty/.config/kitty/kitty.conf` into `~/.config`, **`~/.screenrc`**, links Claude/Codex config into `~/.claude` and `~/.codex/AGENTS.md`, and appends a guarded `source` line to `~/.zshrc`. Re-running is safe (skips duplicate shell hooks).
+This symlinks `starship.toml`, `.vimrc` (as Neovim `init.vim`) into `~/.config`, **`~/.screenrc`**, links Claude/Codex config into `~/.claude` and `~/.codex/AGENTS.md`, and appends a guarded `source` line to `~/.zshrc`. Re-running is safe (skips duplicate shell hooks).
 
 On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `bat`, `fzf`, `ripgrep`, **`zoxide`**, **`screen`**, `xclip`, `wl-clipboard`, `git`, `curl`, and **`neovim` only if** `--no-nvim-appimage`. It also installs **`moor`** from the latest `walles/moor` GitHub release binary into `/usr/local/bin/moor`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For **Ctrl-T** file search, install fzf from git (below) so `~/.fzf.bash` exists.
 
@@ -61,8 +61,6 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
 | `.gitconfig` | Git config — aliases, delta pager, credential helper |
 | `.vimrc` | Neovim config with vim-plug |
 | `.terminal` | Bash/Zsh aliases, pager defaults (`PAGER`/`MANPAGER` to `moor` when available), zsh-z (zsh), zoxide fallback, fzf (files), Atuin when installed, Starship |
-| `kitty/.config/kitty/kitty.conf` | Kitty config (socket-only remote control via local Unix socket) |
-| `terminal.d/kitty.sh` | Kitty-only helper commands (`krc`, split/tab/focus, zsh slash aliases) |
 | `.screenrc` | GNU screen defaults (symlinked to `~`) |
 | `starship.toml` | [Starship](https://starship.rs) prompt config |
 | `vscode.jsonc` | VSCode `settings.json` |
@@ -107,22 +105,7 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
    ```sh
    echo 'source /path/to/repo/.terminal' >> ~/.zshrc
    mkdir -p ~/.config && ln -s /path/to/repo/starship.toml ~/.config/starship.toml
-   mkdir -p ~/.config/kitty && ln -s /path/to/repo/kitty/.config/kitty/kitty.conf ~/.config/kitty/kitty.conf
    ```
-
-3. Kitty remote control helpers are isolated in `terminal.d/kitty.sh` and auto-loaded from `.terminal` only when running inside Kitty (`KITTY_PID`/`KITTY_WINDOW_ID`):
-   ```sh
-   export KITTY_LISTEN_ON="unix:/tmp/kitty"   # optional override; default is unix:/tmp/kitty
-   kls       # kitty @ ls
-   kvsplit   # vertical split (Kitty "window")
-   khsplit   # horizontal split
-   ktab      # new tab
-   ```
-   Optional force-enable outside Kitty for testing:
-   ```sh
-   export PB_ENABLE_KITTY_HELPERS=1
-   ```
-   These helpers control local Kitty UI state only; they do not replace tmux/session persistence.
 
 ### Git (`.gitconfig`)
 

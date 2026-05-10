@@ -390,10 +390,6 @@ ln -sf "${SCRIPT_DIR}/starship.toml" "${HOME}/.config/starship.toml"
 ln -sf "${SCRIPT_DIR}/.screenrc" "${HOME}/.screenrc"
 mkdir -p "${HOME}/.config/nvim"
 ln -sf "${SCRIPT_DIR}/.vimrc" "${HOME}/.config/nvim/init.vim"
-mkdir -p "${HOME}/.config/kitty"
-ln -sf "${SCRIPT_DIR}/kitty/.config/kitty/kitty.conf" "${HOME}/.config/kitty/kitty.conf"
-mkdir -p "${HOME}/.config/pb-terminal"
-ln -sf "${SCRIPT_DIR}/terminal.d/kitty.sh" "${HOME}/.config/pb-terminal/kitty.sh"
 
 install_vim_plug
 
@@ -535,7 +531,7 @@ else
   echo "Appended source hook to ${RC_FILE}"
 fi
 
-echo "Symlinked starship.toml, nvim init.vim, kitty.conf, .screenrc, Claude Code config, and Codex config from ${SCRIPT_DIR}"
+echo "Symlinked starship.toml, nvim init.vim, .screenrc, Claude Code config, and Codex config from ${SCRIPT_DIR}"
 if [[ "$WITH_GIT" != true ]]; then
   echo "Tip: run with --git to symlink .gitconfig (skipped by default)."
 fi

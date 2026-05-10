@@ -365,14 +365,6 @@ serve() { python3 -m http.server "${1:-8000}"; }
 # find file by name
 ff() { find . -name "*$1*" 2>/dev/null; }
 
-# Optional Kitty helpers (load only in Kitty, unless explicitly enabled).
-if [[ "${PB_ENABLE_KITTY_HELPERS:-0}" == "1" ]] || [[ -n "${KITTY_PID:-}" ]] || [[ -n "${KITTY_WINDOW_ID:-}" ]]; then
-  if [[ -f "${HOME}/.config/pb-terminal/kitty.sh" ]]; then
-    # shellcheck source=/dev/null
-    source "${HOME}/.config/pb-terminal/kitty.sh"
-  fi
-fi
-
 # -----------------------------------------------------------------------------
 # PATH additions (add project-specific paths here)
 # -----------------------------------------------------------------------------

@@ -85,8 +85,6 @@ strip_rc_blocks() {
 
 remove_symlink_if_ours "${HOME}/.config/starship.toml" "${SCRIPT_DIR}/starship.toml"
 remove_symlink_if_ours "${HOME}/.config/nvim/init.vim" "${SCRIPT_DIR}/.vimrc"
-remove_symlink_if_ours "${HOME}/.config/kitty/kitty.conf" "${SCRIPT_DIR}/kitty/.config/kitty/kitty.conf"
-remove_symlink_if_ours "${HOME}/.config/pb-terminal/kitty.sh" "${SCRIPT_DIR}/terminal.d/kitty.sh"
 remove_symlink_if_ours "${HOME}/.screenrc" "${SCRIPT_DIR}/.screenrc"
 remove_symlink_if_ours "${HOME}/.tmux.conf" "${SCRIPT_DIR}/.tmux.conf"
 remove_symlink_if_ours "${HOME}/.codex/AGENTS.md" "${SCRIPT_DIR}/.codex/AGENTS.md"

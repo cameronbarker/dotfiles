@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 This repository is a dotfiles/tooling setup, not an application service.
-- Root config files: `.terminal`, `.vimrc`, `.gitconfig`, `.screenrc`, `starship.toml`, `vscode.jsonc`
+- Root config files: `.terminal` (sources topic modules in `terminal/*.sh`), `.vimrc`, `.gitconfig`, `.screenrc`, `starship.toml`, `vscode.jsonc`
 - Automation scripts: `install.sh`, `uninstall.sh`
 - Prompt/docs support: `prompts/`, `ai-context/`
 - Agent tooling/config: `.codex/`, `.claude/`, `.ai/`
@@ -19,7 +19,7 @@ Primary workflow is script-driven:
 
 Validation commands before PR:
 - `bash -n install.sh uninstall.sh` (syntax check)
-- `shellcheck install.sh uninstall.sh .terminal` (if available)
+- `shellcheck install.sh uninstall.sh .terminal terminal/*.sh` (if available)
 
 ## Coding Style & Naming Conventions
 - Prefer Bash for repository automation; keep scripts POSIX-aware unless Bash features are needed.

@@ -23,7 +23,7 @@ bash -n install.sh uninstall.sh
 If `shellcheck` is installed:
 
 ```sh
-shellcheck install.sh uninstall.sh .terminal
+shellcheck install.sh uninstall.sh .terminal terminal/*.sh
 ```
 
 Also verify **idempotency**: running `./install.sh` twice should not duplicate shell marker blocks in `~/.bashrc` / `~/.zshrc`.

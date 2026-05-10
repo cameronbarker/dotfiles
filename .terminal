@@ -17,6 +17,16 @@
 #        bat (cat w/ color):  apt install bat  # installs as 'batcat' on Debian/Ubuntu
 # =============================================================================
 
+# Remove stale hooks/functions from prior versions of this file so that
+# re-sourcing in an existing shell fully reverts old behavior.
+if [[ -n "${ZSH_VERSION:-}" ]]; then
+  preexec_functions=("${(@)preexec_functions:#_pb_preexec_capture}")
+  precmd_functions=("${(@)precmd_functions:#_pb_precmd_capture}")
+  unfunction _pb_preexec_capture 2>/dev/null
+  unfunction _pb_precmd_capture 2>/dev/null
+  unset _pb_capture_active _pb_orig_stdout_fd _pb_orig_stderr_fd _pb_capture_dir _pb_last_output_file 2>/dev/null
+fi
+
 # -----------------------------------------------------------------------------
 # Terminal
 # -----------------------------------------------------------------------------
@@ -60,19 +70,32 @@ elif command -v wl-copy &>/dev/null; then
   pbcopy() { wl-copy; }
 fi
 alias cwd='echo -n $PWD | pbcopy && echo "Copied current path to clipboard"'
-if [[ -n "${BASH_VERSION:-}" ]]; then
-  alias src='source ~/.bashrc'
-elif [[ -n "${ZSH_VERSION:-}" ]]; then
-  alias src='source ~/.zshrc'
-fi
 
-# Copy the last captured terminal output to clipboard.
-copylast() {
-  local _pb_line_cap=2000
+# Capture output only when requested: `cap <cmd>`, then `/copy`.
+cap() {
+  if [[ $# -eq 0 ]]; then
+    echo "Usage: cap <cmd> [args...]" >&2
+    return 1
+  fi
+
   local _pb_cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/pb-terminal"
   local _pb_last_output_file="${_pb_cache_dir}/last_output.txt"
-  local _pb_tmp_file="${_pb_cache_dir}/last_output.tail.txt"
-  local _pb_lines
+  local _pb_status_file="${_pb_cache_dir}/last_status.$$"
+  local _pb_status
+
+  mkdir -p "${_pb_cache_dir}"
+  {
+    "$@"
+    printf '%s\n' "$?" > "${_pb_status_file}"
+  } 2>&1 | tee "${_pb_last_output_file}"
+
+  _pb_status="$(cat "${_pb_status_file}" 2>/dev/null || printf '1')"
+  rm -f "${_pb_status_file}"
+  return "${_pb_status}"
+}
+
+copylast() {
+  local _pb_last_output_file="${XDG_CACHE_HOME:-$HOME/.cache}/pb-terminal/last_output.txt"
 
   if ! command -v pbcopy &>/dev/null; then
     echo "Clipboard command not found (pbcopy/xclip/wl-copy)." >&2
@@ -80,20 +103,22 @@ copylast() {
   fi
 
   if [[ ! -s "${_pb_last_output_file}" ]]; then
-    echo "No captured output found yet. Run a command first." >&2
+    echo "No captured output found. Run a command with: cap <cmd>" >&2
     return 1
   fi
 
-  mkdir -p "${_pb_cache_dir}"
-  tail -n "${_pb_line_cap}" "${_pb_last_output_file}" > "${_pb_tmp_file}"
-  _pb_lines="$(wc -l < "${_pb_tmp_file}")"
-  pbcopy < "${_pb_tmp_file}"
-  echo "Copied ${_pb_lines} line(s) of last output to clipboard"
+  pbcopy < "${_pb_last_output_file}"
+  echo "Copied last captured output to clipboard"
 }
 
-# zsh supports slash-prefixed alias names; bash does not.
 if [[ -n "${ZSH_VERSION:-}" ]]; then
   alias /copy='copylast'
+fi
+
+if [[ -n "${BASH_VERSION:-}" ]]; then
+  alias src='source ~/.bashrc'
+elif [[ -n "${ZSH_VERSION:-}" ]]; then
+  alias src='source ~/.zshrc'
 fi
 
 # -----------------------------------------------------------------------------
@@ -289,50 +314,6 @@ if [[ -n "${ZSH_VERSION:-}" ]]; then
   alias /sync='tmux_sync_toggle'
   alias /capture='tmux_capture'
   alias /ctx='tmux_ctx'
-fi
-
-# Capture output of the most recently-run zsh command.
-# Skip full-screen programs to avoid breaking interactive TUI behavior.
-if [[ -n "${ZSH_VERSION:-}" ]] && [[ -o interactive ]]; then
-  _pb_capture_dir="${XDG_CACHE_HOME:-$HOME/.cache}/pb-terminal"
-  _pb_last_output_file="${_pb_capture_dir}/last_output.txt"
-  _pb_capture_active=0
-  _pb_orig_stdout_fd=
-  _pb_orig_stderr_fd=
-
-  _pb_should_skip_capture() {
-    local _pb_cmd="${1:-}"
-    [[ -z "${_pb_cmd}" ]] && return 0
-    [[ "${_pb_cmd}" =~ '(^|[[:space:];|&])(/copy|copylast|vim|nvim|vi|less|more|man|top|htop|fzf|fzf-tmux|ssh|mosh|tmux|screen)([[:space:];|&]|$)' ]]
-  }
-
-  _pb_preexec_capture() {
-    local _pb_cmd="${1:-}"
-    mkdir -p "${_pb_capture_dir}"
-    _pb_capture_active=0
-
-    if _pb_should_skip_capture "${_pb_cmd}"; then
-      return 0
-    fi
-
-    : >| "${_pb_last_output_file}"
-    exec {_pb_orig_stdout_fd}>&1
-    exec {_pb_orig_stderr_fd}>&2
-    exec > >(tee "${_pb_last_output_file}") 2>&1
-    _pb_capture_active=1
-  }
-
-  _pb_precmd_capture() {
-    if (( _pb_capture_active == 1 )); then
-      exec 1>&${_pb_orig_stdout_fd} 2>&${_pb_orig_stderr_fd}
-      exec {_pb_orig_stdout_fd}>&-
-      exec {_pb_orig_stderr_fd}>&-
-      _pb_capture_active=0
-    fi
-  }
-
-  preexec_functions+=(_pb_preexec_capture)
-  precmd_functions+=(_pb_precmd_capture)
 fi
 
 # -----------------------------------------------------------------------------

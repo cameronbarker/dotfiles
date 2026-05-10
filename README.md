@@ -4,11 +4,16 @@ Personal config files for a cross-platform (macOS/Linux) dev environment.
 
 ## Quick install (Debian/Linux, zsh)
 
-Clone to any path, then run the installer from the repo root:
+Fresh Debian/Linux instance one-liner:
 
 ```sh
-git clone https://github.com/cameronbarker/dotfiles.git ~/Dotfiles
-cd ~/Dotfiles && ./install.sh
+sudo apt update && sudo apt install -y git && git clone https://github.com/cameronbarker/dotfiles.git && cd dotfiles && chmod +x install.sh && ./install.sh
+```
+
+Proxmox/root (no `sudo`) one-liner:
+
+```sh
+apt update && apt install -y git && git clone https://github.com/cameronbarker/dotfiles.git && cd dotfiles && chmod +x install.sh && ./install.sh
 ```
 
 On **Linux**, `./install.sh` installs Neovim from the [official AppImage](https://github.com/neovim/neovim/releases) by default: it **extracts** to `/opt/nvim` (binaries under `/opt/nvim/usr/bin/nvim`) and prepends **`/opt/nvim/usr/bin`** to your `PATH` in `~/.zshrc`. Extraction avoids **FUSE**, which many **LXC / Proxmox / Jellyfin** hosts lack. The apt **`neovim`** package is **not** installed unless you pass **`--no-nvim-appimage`**. On **macOS**, the AppImage step is skipped (install Neovim with Homebrew, etc.).

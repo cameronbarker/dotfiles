@@ -18,13 +18,24 @@
 # =============================================================================
 
 # Remove stale hooks/functions from prior versions of this file so that
-# re-sourcing in an existing shell fully reverts old behavior.
+# re-sourcing in an existing shell fully reverts old behavior. If a previous
+# version's capture was mid-flight (stdout/stderr redirected to a tee pipe),
+# restore the original fds BEFORE removing the precmd that would have done so —
+# otherwise the shell would be left permanently writing to a pipe.
 if [[ -n "${ZSH_VERSION:-}" ]]; then
+  if [[ "${_pb_capture_active:-0}" == "1" ]]; then
+    if [[ -n "${_pb_orig_stdout_fd:-}" ]]; then
+      exec 1>&${_pb_orig_stdout_fd} {_pb_orig_stdout_fd}>&-
+    fi
+    if [[ -n "${_pb_orig_stderr_fd:-}" ]]; then
+      exec 2>&${_pb_orig_stderr_fd} {_pb_orig_stderr_fd}>&-
+    fi
+  fi
   preexec_functions=("${(@)preexec_functions:#_pb_preexec_capture}")
   precmd_functions=("${(@)precmd_functions:#_pb_precmd_capture}")
   unfunction _pb_preexec_capture 2>/dev/null
   unfunction _pb_precmd_capture 2>/dev/null
-  unset _pb_capture_active _pb_orig_stdout_fd _pb_orig_stderr_fd _pb_capture_dir _pb_last_output_file 2>/dev/null
+  unset _pb_capture_active _pb_orig_stdout_fd _pb_orig_stderr_fd 2>/dev/null
 fi
 
 # -----------------------------------------------------------------------------
@@ -70,50 +81,6 @@ elif command -v wl-copy &>/dev/null; then
   pbcopy() { wl-copy; }
 fi
 alias cwd='echo -n $PWD | pbcopy && echo "Copied current path to clipboard"'
-
-# Capture output only when requested: `cap <cmd>`, then `/copy`.
-cap() {
-  if [[ $# -eq 0 ]]; then
-    echo "Usage: cap <cmd> [args...]" >&2
-    return 1
-  fi
-
-  local _pb_cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/pb-terminal"
-  local _pb_last_output_file="${_pb_cache_dir}/last_output.txt"
-  local _pb_status_file="${_pb_cache_dir}/last_status.$$"
-  local _pb_status
-
-  mkdir -p "${_pb_cache_dir}"
-  {
-    "$@"
-    printf '%s\n' "$?" > "${_pb_status_file}"
-  } 2>&1 | tee "${_pb_last_output_file}"
-
-  _pb_status="$(cat "${_pb_status_file}" 2>/dev/null || printf '1')"
-  rm -f "${_pb_status_file}"
-  return "${_pb_status}"
-}
-
-copylast() {
-  local _pb_last_output_file="${XDG_CACHE_HOME:-$HOME/.cache}/pb-terminal/last_output.txt"
-
-  if ! command -v pbcopy &>/dev/null; then
-    echo "Clipboard command not found (pbcopy/xclip/wl-copy)." >&2
-    return 1
-  fi
-
-  if [[ ! -s "${_pb_last_output_file}" ]]; then
-    echo "No captured output found. Run a command with: cap <cmd>" >&2
-    return 1
-  fi
-
-  pbcopy < "${_pb_last_output_file}"
-  echo "Copied last captured output to clipboard"
-}
-
-if [[ -n "${ZSH_VERSION:-}" ]]; then
-  alias /copy='copylast'
-fi
 
 if [[ -n "${BASH_VERSION:-}" ]]; then
   alias src='source ~/.bashrc'

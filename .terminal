@@ -32,9 +32,15 @@ alias edit="${EDITOR:-vim}"
 # -----------------------------------------------------------------------------
 # Pager
 # -----------------------------------------------------------------------------
-export PAGER="moor"
-export MANPAGER="moor"
-export BAT_PAGER="moor"
+if command -v moor &>/dev/null; then
+  export PAGER="moor"
+elif command -v moar &>/dev/null; then
+  export PAGER="moar"
+elif command -v less &>/dev/null; then
+  export PAGER="less"
+fi
+export MANPAGER="${PAGER:-less}"
+export BAT_PAGER="${PAGER:-less}"
 
 # -----------------------------------------------------------------------------
 # Navigation

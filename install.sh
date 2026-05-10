@@ -59,11 +59,11 @@ install_apt_packages() {
   # neovim — .terminal aliases vim to nvim; .vimrc is for Neovim
   # bat — syntax-highlighted cat (.terminal); Debian binary is batcat
   # fzf — fuzzy finder (Ctrl-R / Ctrl-T); available on recent Debian/Ubuntu
-  # moar — default pager used by PAGER and MANPAGER in .terminal
+  # moor — pager binary is installed from GitHub releases (not Debian apt)
   # xclip, wl-clipboard — clipboard for cwd alias (X11 and Wayland)
   # git, curl — vim-plug and :PlugInstall clone plugins
   # neovim from apt only with --no-nvim-appimage (default is extracted AppImage on Linux)
-  local packages=(bat fzf ripgrep zoxide screen moar xclip wl-clipboard git curl)
+  local packages=(bat fzf ripgrep zoxide screen xclip wl-clipboard git curl)
   if [[ "$NVIM_APPIMAGE" != true ]]; then
     packages=(neovim "${packages[@]}")
   fi
@@ -180,6 +180,82 @@ install_nvim_appimage() {
 }
 
 install_apt_packages
+
+install_moor() {
+  if command -v moor &>/dev/null; then
+    return 0
+  fi
+  if [[ "$(uname -s)" != Linux ]]; then
+    return 0
+  fi
+  if ! command -v curl &>/dev/null; then
+    echo "Skipping moor install: curl not found." >&2
+    return 0
+  fi
+
+  local arch_pattern
+  case "$(uname -m)" in
+    x86_64) arch_pattern='(x86_64|amd64)' ;;
+    aarch64|arm64) arch_pattern='(aarch64|arm64)' ;;
+    *)
+      echo "Skipping moor install: unsupported architecture $(uname -m)." >&2
+      return 0
+      ;;
+  esac
+
+  local release_json asset_url
+  if ! release_json="$(curl -fsSL https://api.github.com/repos/walles/moor/releases/latest)"; then
+    echo "Skipping moor install: failed to query latest release metadata." >&2
+    return 0
+  fi
+
+  asset_url="$(
+    printf '%s\n' "${release_json}" |
+      grep -Eo 'https://[^"]+' |
+      grep '/walles/moor/releases/download/' |
+      grep -E '/moor-' |
+      grep -E "${arch_pattern}" |
+      grep -E 'linux|unknown-linux' |
+      grep -Ev '\.(sha256|sha256sum|txt|sig)$' |
+      head -n 1
+  )"
+  if [[ -z "${asset_url}" ]]; then
+    echo "Skipping moor install: no Linux binary asset found for architecture $(uname -m)." >&2
+    return 0
+  fi
+
+  local -a priv=()
+  if [[ "$(id -u)" -eq 0 ]]; then
+    priv=()
+  elif command -v sudo &>/dev/null; then
+    priv=(sudo)
+  else
+    echo "Skipping moor install: need root or sudo to install /usr/local/bin/moor." >&2
+    return 0
+  fi
+
+  local work asset_path
+  work="$(mktemp -d)"
+  asset_path="${work}/moor"
+
+  echo "Downloading moor binary: ${asset_url}"
+  if ! curl -fL --retry 3 -o "${asset_path}" "${asset_url}"; then
+    rm -rf "${work}"
+    echo "Skipping moor install: download failed." >&2
+    return 0
+  fi
+  chmod a+x "${asset_path}"
+
+  if [[ ${#priv[@]} -eq 0 ]]; then
+    mv "${asset_path}" /usr/local/bin/moor
+  else
+    "${priv[@]}" mv "${asset_path}" /usr/local/bin/moor
+  fi
+  rm -rf "${work}"
+  echo "Installed moor to /usr/local/bin/moor"
+}
+
+install_moor
 install_nvim_appimage
 
 install_vim_plug() {

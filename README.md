@@ -15,7 +15,7 @@ On **Linux**, `./install.sh` installs Neovim from the [official AppImage](https:
 
 This symlinks `starship.toml`, `.vimrc` (as Neovim `init.vim`), and `kitty/.config/kitty/kitty.conf` into `~/.config`, **`~/.screenrc`**, links Claude/Codex config into `~/.claude` and `~/.codex/AGENTS.md`, and appends a guarded `source` line to `~/.bashrc`. Re-running is safe (skips duplicate shell hooks).
 
-On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `bat`, `fzf`, `ripgrep`, **`zoxide`**, **`screen`**, `moar`, `xclip`, `wl-clipboard`, `git`, `curl`, and **`neovim` only if** `--no-nvim-appimage`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For **Ctrl-T** file search, install fzf from git (below) so `~/.fzf.bash` exists.
+On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `bat`, `fzf`, `ripgrep`, **`zoxide`**, **`screen`**, `xclip`, `wl-clipboard`, `git`, `curl`, and **`neovim` only if** `--no-nvim-appimage`. It also installs **`moor`** from the latest `walles/moor` GitHub release binary into `/usr/local/bin/moor`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For **Ctrl-T** file search, install fzf from git (below) so `~/.fzf.bash` exists.
 
 By default the script also installs **[Atuin](https://atuin.sh)** (official binary to `~/.atuin/bin`, plus `~/.bash-preexec.sh` for Bash). Hooks run from `.terminal` only — **do not** use `https://setup.atuin.sh` (it appends duplicate `atuin init` lines to your rc). Pass **`--no-atuin`** to skip. Optional: `atuin register` / `atuin login` for sync ([docs](https://docs.atuin.sh)).
 
@@ -56,7 +56,7 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
 | `CONTRIBUTING.md` | How to contribute — validation, PRs, docs, safety |
 | `.gitconfig` | Git config — aliases, delta pager, credential helper |
 | `.vimrc` | Neovim config with vim-plug |
-| `.terminal` | Bash/Zsh aliases, pager defaults (`PAGER`/`MANPAGER` to `moar`), zsh-z (zsh), zoxide fallback, fzf (files), Atuin when installed, Starship |
+| `.terminal` | Bash/Zsh aliases, pager defaults (`PAGER`/`MANPAGER` to `moor` when available), zsh-z (zsh), zoxide fallback, fzf (files), Atuin when installed, Starship |
 | `kitty/.config/kitty/kitty.conf` | Kitty config (socket-only remote control via local Unix socket) |
 | `terminal.d/kitty.sh` | Kitty-only helper commands (`krc`, split/tab/focus, zsh slash aliases) |
 | `.screenrc` | GNU screen defaults (symlinked to `~`) |
@@ -91,8 +91,8 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
    # bat (cat with syntax highlighting) — Debian/Ubuntu
    sudo apt install bat
 
-   # moar (default pager used by PAGER and MANPAGER in .terminal)
-   sudo apt install moar
+   # moor (default pager used by PAGER and MANPAGER in .terminal)
+   # Installed by ./install.sh from GitHub releases on Debian/Ubuntu.
 
    # zoxide + screen — also pulled in by ./install.sh on Debian/Ubuntu
    sudo apt install zoxide screen

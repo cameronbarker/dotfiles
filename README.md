@@ -2,7 +2,7 @@
 
 Personal config files for a cross-platform (macOS/Linux) dev environment.
 
-## Quick install (Debian/Linux, bash)
+## Quick install (Debian/Linux, zsh)
 
 Clone to any path, then run the installer from the repo root:
 
@@ -11,18 +11,17 @@ git clone https://github.com/cameronbarker/dotfiles.git ~/Dotfiles
 cd ~/Dotfiles && ./install.sh
 ```
 
-On **Linux**, `./install.sh` installs Neovim from the [official AppImage](https://github.com/neovim/neovim/releases) by default: it **extracts** to `/opt/nvim` (binaries under `/opt/nvim/usr/bin/nvim`) and prepends **`/opt/nvim/usr/bin`** to your `PATH` in `~/.bashrc`. Extraction avoids **FUSE**, which many **LXC / Proxmox / Jellyfin** hosts lack. The apt **`neovim`** package is **not** installed unless you pass **`--no-nvim-appimage`**. On **macOS**, the AppImage step is skipped (install Neovim with Homebrew, etc.).
+On **Linux**, `./install.sh` installs Neovim from the [official AppImage](https://github.com/neovim/neovim/releases) by default: it **extracts** to `/opt/nvim` (binaries under `/opt/nvim/usr/bin/nvim`) and prepends **`/opt/nvim/usr/bin`** to your `PATH` in `~/.zshrc`. Extraction avoids **FUSE**, which many **LXC / Proxmox / Jellyfin** hosts lack. The apt **`neovim`** package is **not** installed unless you pass **`--no-nvim-appimage`**. On **macOS**, the AppImage step is skipped (install Neovim with Homebrew, etc.).
 
-This symlinks `starship.toml`, `.vimrc` (as Neovim `init.vim`), and `kitty/.config/kitty/kitty.conf` into `~/.config`, **`~/.screenrc`**, links Claude/Codex config into `~/.claude` and `~/.codex/AGENTS.md`, and appends a guarded `source` line to `~/.bashrc`. Re-running is safe (skips duplicate shell hooks).
+This symlinks `starship.toml`, `.vimrc` (as Neovim `init.vim`), and `kitty/.config/kitty/kitty.conf` into `~/.config`, **`~/.screenrc`**, links Claude/Codex config into `~/.claude` and `~/.codex/AGENTS.md`, and appends a guarded `source` line to `~/.zshrc`. Re-running is safe (skips duplicate shell hooks).
 
 On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `bat`, `fzf`, `ripgrep`, **`zoxide`**, **`screen`**, `xclip`, `wl-clipboard`, `git`, `curl`, and **`neovim` only if** `--no-nvim-appimage`. It also installs **`moor`** from the latest `walles/moor` GitHub release binary into `/usr/local/bin/moor`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For **Ctrl-T** file search, install fzf from git (below) so `~/.fzf.bash` exists.
 
-By default the script also installs **[Atuin](https://atuin.sh)** (official binary to `~/.atuin/bin`, plus `~/.bash-preexec.sh` for Bash). Hooks run from `.terminal` only — **do not** use `https://setup.atuin.sh` (it appends duplicate `atuin init` lines to your rc). Pass **`--no-atuin`** to skip. Optional: `atuin register` / `atuin login` for sync ([docs](https://docs.atuin.sh)).
+By default the script also installs **[Atuin](https://atuin.sh)** (official binary to `~/.atuin/bin`). Hooks run from `.terminal` only — **do not** use `https://setup.atuin.sh` (it appends duplicate `atuin init` lines to your rc). Pass **`--no-atuin`** to skip. Optional: `atuin register` / `atuin login` for sync ([docs](https://docs.atuin.sh)).
 
 The script also downloads **vim-plug** into `~/.local/share/nvim/site/autoload/plug.vim` if missing. Run `nvim +PlugInstall +qall` once to fetch plugins.
 
-- `./install.sh --zsh` — append the hook to `~/.zshrc` instead of `~/.bashrc`.
-  Also installs `agkozak/zsh-z` to `~/.zsh-z` if missing.
+- `./install.sh` is zsh-only: appends shell hook to `~/.zshrc`, removes this repo's managed hook block from `~/.bashrc`, installs `agkozak/zsh-z` when missing, and attempts to set your login shell to zsh.
 - `./install.sh --git` — also symlink `.gitconfig` into `~` (off by default so an existing config is not overwritten).
 - `./install.sh --no-apt` — skip apt (macOS, containers without sudo, or you manage packages yourself).
 - `./install.sh --no-nvim-appimage` — on Debian/Ubuntu, install **`neovim` from apt** instead of the extracted AppImage under `/opt/nvim` (ignored on non-Linux).
@@ -41,7 +40,7 @@ cd ~/Dotfiles && ./uninstall.sh --git --nvim-appimage --atuin --vim-plug --plugg
 
 - **`--git`** — also remove `~/.gitconfig` if it symlinks this repo’s `.gitconfig`.
 - **`--nvim-appimage`** — remove `/opt/nvim` (extracted tree or old single-file install; needs root or `sudo`).
-- **`--atuin`** — remove `~/.atuin` (see script output about `~/.bash-preexec.sh`).
+- **`--atuin`** — remove `~/.atuin`.
 - **`--vim-plug`** — remove `~/.local/share/nvim/site/autoload/plug.vim`.
 - **`--plugged`** — delete `~/.vim/plugged` (all vim-plug clones).
 
@@ -99,9 +98,9 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
    # macOS: brew install zoxide   (screen is usually preinstalled)
    ```
 
-2. Prefer `./install.sh` (or `./install.sh --zsh`) for sourcing and symlinks; or add by hand:
+2. Prefer `./install.sh` for sourcing and symlinks; or add by hand:
    ```sh
-   echo 'source /path/to/repo/.terminal' >> ~/.bashrc
+   echo 'source /path/to/repo/.terminal' >> ~/.zshrc
    mkdir -p ~/.config && ln -s /path/to/repo/starship.toml ~/.config/starship.toml
    mkdir -p ~/.config/kitty && ln -s /path/to/repo/kitty/.config/kitty/kitty.conf ~/.config/kitty/kitty.conf
    ```
@@ -146,7 +145,7 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
    chmod u+x nvim-linux-x86_64.appimage
    ./nvim-linux-x86_64.appimage --appimage-extract
    sudo rm -rf /opt/nvim && sudo mv squashfs-root /opt/nvim
-   echo 'export PATH="/opt/nvim/usr/bin:$PATH"' >> ~/.bashrc
+   echo 'export PATH="/opt/nvim/usr/bin:$PATH"' >> ~/.zshrc
    # On arm64: use nvim-linux-arm64.appimage instead.
 
    # Default ./install.sh on Linux does this AppImage extract for you.

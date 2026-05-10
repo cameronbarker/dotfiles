@@ -1,19 +1,17 @@
 #!/usr/bin/env bash
-# Symlink dotfiles into ~/.config and append a one-line source hook to ~/.bashrc (or ~/.zshrc).
+# Symlink dotfiles into ~/.config and append a one-line source hook to ~/.zshrc.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-USE_ZSH=false
 WITH_GIT=false
 NO_APT=false
 # On Linux, Neovim comes from the official extracted AppImage under /opt/nvim (no FUSE).
 NVIM_APPIMAGE=true
-# Atuin shell history (binary + bash-preexec); hooks live in .terminal, not duplicated in rc.
+# Atuin shell history binary; hooks live in .terminal, not duplicated in rc.
 ATUIN_INSTALL=true
 
 for arg in "$@"; do
   case "$arg" in
-    --zsh) USE_ZSH=true ;;
     --git) WITH_GIT=true ;;
     --no-apt) NO_APT=true ;;
     --no-nvim-appimage) NVIM_APPIMAGE=false ;;
@@ -21,7 +19,7 @@ for arg in "$@"; do
     --no-atuin) ATUIN_INSTALL=false ;;
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: $0 [--zsh] [--git] [--no-apt] [--no-nvim-appimage] [--no-atuin]" >&2
+      echo "Usage: $0 [--git] [--no-apt] [--no-nvim-appimage] [--no-atuin]" >&2
       exit 1
       ;;
   esac
@@ -30,12 +28,47 @@ done
 MARKER='# pb-configs dotfiles'
 SOURCE_LINE="source \"${SCRIPT_DIR}/.terminal\""
 NVIM_PATH_MARKER='# pb-configs: Neovim AppImage on PATH'
+RC_FILE="${HOME}/.zshrc"
+BASH_RC_FILE="${HOME}/.bashrc"
 
-if [[ "$USE_ZSH" == true ]]; then
-  RC_FILE="${HOME}/.zshrc"
-else
-  RC_FILE="${HOME}/.bashrc"
-fi
+strip_rc_blocks() {
+  local f=$1
+  [[ -f "$f" ]] || return 0
+  local tmp
+  tmp="$(mktemp)"
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    if [[ "$line" == "$MARKER" ]]; then
+      if IFS= read -r next_line || true; then
+        if [[ "$next_line" == "source \"${SCRIPT_DIR}/.terminal\"" ]]; then
+          continue
+        fi
+        printf '%s\n' "$line" >>"$tmp"
+        printf '%s\n' "$next_line" >>"$tmp"
+      else
+        printf '%s\n' "$line" >>"$tmp"
+      fi
+    elif [[ "$line" == "$NVIM_PATH_MARKER" ]]; then
+      if IFS= read -r next_line || true; then
+        if [[ "$next_line" == 'export PATH="/opt/nvim:$PATH"' ]] || [[ "$next_line" == 'export PATH="/opt/nvim/usr/bin:$PATH"' ]]; then
+          continue
+        fi
+        printf '%s\n' "$line" >>"$tmp"
+        printf '%s\n' "$next_line" >>"$tmp"
+      else
+        printf '%s\n' "$line" >>"$tmp"
+      fi
+    else
+      printf '%s\n' "$line" >>"$tmp"
+    fi
+  done <"$f"
+  if cmp -s "$tmp" "$f" 2>/dev/null; then
+    rm -f "$tmp"
+    echo "No matching install markers in $f"
+  else
+    mv "$tmp" "$f"
+    echo "Removed install markers from $f"
+  fi
+}
 
 install_apt_packages() {
   if [[ "$NO_APT" == true ]]; then
@@ -63,7 +96,7 @@ install_apt_packages() {
   # xclip, wl-clipboard — clipboard for cwd alias (X11 and Wayland)
   # git, curl — vim-plug and :PlugInstall clone plugins
   # neovim from apt only with --no-nvim-appimage (default is extracted AppImage on Linux)
-  local packages=(bat fzf ripgrep zoxide screen tmux unzip xclip wl-clipboard git curl)
+  local packages=(bat fzf ripgrep zoxide screen tmux unzip xclip wl-clipboard git curl zsh)
   if [[ "$NVIM_APPIMAGE" != true ]]; then
     packages=(neovim "${packages[@]}")
   fi
@@ -293,6 +326,32 @@ install_moor() {
 install_moor
 install_nvim_appimage
 
+set_login_shell_to_zsh() {
+  local zsh_path current_shell
+  zsh_path="$(command -v zsh 2>/dev/null || true)"
+  if [[ -z "${zsh_path}" ]]; then
+    echo "Could not find zsh in PATH. Install zsh and run: chsh -s /path/to/zsh $(id -un)" >&2
+    return 0
+  fi
+
+  current_shell="${SHELL:-}"
+  if [[ "${current_shell}" == "${zsh_path}" ]]; then
+    echo "Login shell already set to ${zsh_path}"
+    return 0
+  fi
+
+  if [[ -f /etc/shells ]] && ! grep -qFx "${zsh_path}" /etc/shells; then
+    echo "Warning: ${zsh_path} is not listed in /etc/shells; chsh may fail." >&2
+  fi
+
+  if chsh -s "${zsh_path}" "$(id -un)" >/dev/null 2>&1; then
+    echo "Set login shell to ${zsh_path} for user $(id -un)"
+  else
+    echo "Could not set login shell automatically (common in containers)." >&2
+    echo "Run manually: chsh -s \"${zsh_path}\" \"$(id -un)\"" >&2
+  fi
+}
+
 install_starship() {
   if command -v starship &>/dev/null; then
     return 0
@@ -339,7 +398,6 @@ ln -sf "${SCRIPT_DIR}/terminal.d/kitty.sh" "${HOME}/.config/pb-terminal/kitty.sh
 install_vim_plug
 
 install_zsh_z() {
-  [[ "$USE_ZSH" == true ]] || return 0
   if [[ -f "${HOME}/.zsh-z/zsh-z.plugin.zsh" ]]; then
     return 0
   fi
@@ -368,16 +426,13 @@ install_atuin() {
     echo "Atuin installer failed." >&2
     return 0
   fi
-  # Bash needs bash-preexec for Atuin’s preexec hooks; .terminal sources it before `atuin init bash`.
-  if [[ ! -f "${HOME}/.bash-preexec.sh" ]]; then
-    curl -fsSL -o "${HOME}/.bash-preexec.sh" \
-      https://raw.githubusercontent.com/rcaloras/bash-preexec/master/bash-preexec.sh || true
-  fi
   if [[ -x "${HOME}/.atuin/bin/atuin" ]]; then
     "${HOME}/.atuin/bin/atuin" import auto 2>/dev/null || true
   fi
 }
 
+strip_rc_blocks "${BASH_RC_FILE}"
+set_login_shell_to_zsh
 install_zsh_z
 install_atuin
 
@@ -490,3 +545,4 @@ fi
 if command -v nvim &>/dev/null && [[ -f "${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim" ]]; then
   echo "Tip: run 'nvim +PlugInstall +qall' once to install plugins (needs git + network)."
 fi
+echo "Open a new login session to start in zsh (source ~/.zshrc only reloads config in current shell)."

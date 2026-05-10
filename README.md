@@ -2,24 +2,84 @@
 
 Personal config files for a cross-platform (macOS/Linux) dev environment.
 
+## Quick install (Debian/Linux, zsh)
+
+Fresh Debian/Linux instance one-liner:
+
+```sh
+sudo apt update && sudo apt install -y git && git clone https://github.com/cameronbarker/dotfiles.git && cd dotfiles && chmod +x install.sh && ./install.sh
+```
+
+Proxmox/root (no `sudo`) one-liner:
+
+```sh
+apt update && apt install -y git && git clone https://github.com/cameronbarker/dotfiles.git && cd dotfiles && chmod +x install.sh && ./install.sh
+```
+
+On **Linux**, `./install.sh` installs Neovim from the [official AppImage](https://github.com/neovim/neovim/releases) by default: it **extracts** to `/opt/nvim` (binaries under `/opt/nvim/usr/bin/nvim`) and prepends **`/opt/nvim/usr/bin`** to your `PATH` in `~/.zshrc`. Extraction avoids **FUSE**, which many **LXC / Proxmox / Jellyfin** hosts lack. The apt **`neovim`** package is **not** installed unless you pass **`--no-nvim-appimage`**. On **macOS**, the AppImage step is skipped (install Neovim with Homebrew, etc.).
+
+This symlinks `starship.toml`, `.vimrc` (as Neovim `init.vim`) into `~/.config`, **`~/.screenrc`**, links Claude/Codex config into `~/.claude` and `~/.codex/AGENTS.md`, and appends a guarded `source` line to `~/.zshrc`. Re-running is safe (skips duplicate shell hooks).
+
+On **Debian/Ubuntu**, the script runs `apt-get update` and installs: `bat`, `fzf`, `ripgrep`, **`zoxide`**, **`screen`**, `xclip`, `wl-clipboard`, `git`, `curl`, and **`neovim` only if** `--no-nvim-appimage`. It also installs **`moor`** from the latest `walles/moor` GitHub release binary into `/usr/local/bin/moor`. With `--git` it also installs `libsecret-tools` and `libsecret-1-dev` for the Git credential helper in `.gitconfig`. If you are **root** (e.g. Proxmox host, minimal server), it uses `apt-get` directly; otherwise it uses `sudo`. The apt `fzf` package is often too old for `fzf --bash`; `.terminal` skips that safely. For **Ctrl-T** file search, install fzf from git (below) so `~/.fzf.bash` exists.
+
+By default the script also installs **[Atuin](https://atuin.sh)** (official binary to `~/.atuin/bin`). Hooks run from `.terminal` only — **do not** use `https://setup.atuin.sh` (it appends duplicate `atuin init` lines to your rc). Pass **`--no-atuin`** to skip. Optional: `atuin register` / `atuin login` for sync ([docs](https://docs.atuin.sh)).
+
+The script also downloads **vim-plug** into `~/.local/share/nvim/site/autoload/plug.vim` if missing. Run `nvim +PlugInstall +qall` once to fetch plugins.
+
+- `./install.sh` is zsh-only: appends shell hook to `~/.zshrc`, removes this repo's managed hook block from `~/.bashrc`, installs `agkozak/zsh-z` when missing, and attempts to set your login shell to zsh.
+- `./install.sh --git` — also symlink `.gitconfig` into `~` (off by default so an existing config is not overwritten).
+- `./install.sh --no-apt` — skip apt (macOS, containers without sudo, or you manage packages yourself).
+- `./install.sh --no-nvim-appimage` — on Debian/Ubuntu, install **`neovim` from apt** instead of the extracted AppImage under `/opt/nvim` (ignored on non-Linux).
+- `./install.sh --nvim-appimage` — no-op (AppImage is already the default); kept for compatibility.
+- `./install.sh --no-atuin` — skip installing Atuin.
+
+Install **Starship** with its install script — not from apt (see below).
+
+### Uninstall
+
+From the repo root, [`uninstall.sh`](uninstall.sh) removes repo-owned symlinks/markers it explicitly manages (when links still point at **this** clone):
+
+```sh
+cd ~/Dotfiles && ./uninstall.sh --git --nvim-appimage --atuin --vim-plug --plugged
+```
+
+- **`--git`** — also remove `~/.gitconfig` if it symlinks this repo’s `.gitconfig`.
+- **`--nvim-appimage`** — remove `/opt/nvim` (extracted tree or old single-file install; needs root or `sudo`).
+- **`--atuin`** — remove `~/.atuin`.
+- **`--vim-plug`** — remove `~/.local/share/nvim/site/autoload/plug.vim`.
+- **`--plugged`** — delete `~/.vim/plugged` (all vim-plug clones).
+
+Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. `~/.codex/AGENTS.md` is removed when it points at this clone. Claude symlinks under `~/.claude` are not currently removed by `uninstall.sh`. **Apt packages are not removed.**
+
 ## Files
 
 | File | Description |
 |------|-------------|
+| `AGENTS.md` | Contributor/agent guidelines — layout, validation, PRs, security |
+| `CHANGELOG.md` | Notable changes (grouped; not a raw commit log) |
+| `CONTRIBUTING.md` | How to contribute — validation, PRs, docs, safety |
 | `.gitconfig` | Git config — aliases, delta pager, credential helper |
 | `.vimrc` | Neovim config with vim-plug |
-| `.terminal` | Zsh aliases and shell functions (sourced from `~/.zshrc`) |
+| `.terminal` | Bash/Zsh aliases, pager defaults (`PAGER`/`MANPAGER` to `moor` when available), zsh-z (zsh), zoxide fallback, fzf (files), Atuin when installed, Starship |
+| `.screenrc` | GNU screen defaults (symlinked to `~`) |
 | `starship.toml` | [Starship](https://starship.rs) prompt config |
 | `vscode.jsonc` | VSCode `settings.json` |
+| `install.sh` | Symlinks, shell hook, apt on Debian; Neovim AppImage + Atuin by default on Linux |
+| `uninstall.sh` | Reverse symlinks + rc markers; optional AppImage / Atuin / vim-plug / plugged |
 
-## Setup
+## Setup (manual / details)
 
 ### Shell (`.terminal` + `starship.toml`)
 
-1. Install dependencies:
+1. Install dependencies (or run **`./install.sh`**, which installs Atuin + Neovim on Linux and apt packages on Debian):
    ```sh
    # Starship prompt
    curl -sS https://starship.rs/install.sh | sh
+
+   # Atuin — prefer ./install.sh (binary only; avoids setup.atuin.sh mutating .bashrc).
+   # Manual: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/atuinsh/atuin/releases/latest/download/atuin-installer.sh | sh
+   # macOS: brew install atuin
+   # Optional: atuin register / atuin login for sync (https://docs.atuin.sh)
 
    # fzf (fuzzy finder)
    git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install
@@ -27,23 +87,29 @@ Personal config files for a cross-platform (macOS/Linux) dev environment.
    # z (directory jumping)
    git clone https://github.com/rupa/z.git ~/.z-plugin
 
+   # zsh-z (directory jumping for zsh; preferred in .terminal when present)
+   git clone --depth 1 https://github.com/agkozak/zsh-z ~/.zsh-z
+
    # bat (cat with syntax highlighting) — Debian/Ubuntu
    sudo apt install bat
+
+   # moor (default pager used by PAGER and MANPAGER in .terminal)
+   # Installed by ./install.sh from GitHub releases on Debian/Ubuntu.
+
+   # zoxide + screen — also pulled in by ./install.sh on Debian/Ubuntu
+   sudo apt install zoxide screen
+   # macOS: brew install zoxide   (screen is usually preinstalled)
    ```
 
-2. Source `.terminal` from your `~/.zshrc`:
+2. Prefer `./install.sh` for sourcing and symlinks; or add by hand:
    ```sh
-   echo 'source ~/projects/pb-configs/.terminal' >> ~/.zshrc
-   ```
-
-3. Symlink `starship.toml`:
-   ```sh
-   mkdir -p ~/.config && ln -s ~/projects/pb-configs/starship.toml ~/.config/starship.toml
+   echo 'source /path/to/repo/.terminal' >> ~/.zshrc
+   mkdir -p ~/.config && ln -s /path/to/repo/starship.toml ~/.config/starship.toml
    ```
 
 ### Git (`.gitconfig`)
 
-1. Copy to home directory:
+1. Use `./install.sh --git` after clone, or copy:
    ```sh
    cp .gitconfig ~/.gitconfig
    ```
@@ -62,30 +128,36 @@ Personal config files for a cross-platform (macOS/Linux) dev environment.
    # macOS
    brew install neovim
 
-   # Ubuntu
+   # Linux — latest AppImage without FUSE (LXC-friendly): extract, then PATH to usr/bin
+   curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.appimage
+   chmod u+x nvim-linux-x86_64.appimage
+   ./nvim-linux-x86_64.appimage --appimage-extract
+   sudo rm -rf /opt/nvim && sudo mv squashfs-root /opt/nvim
+   echo 'export PATH="/opt/nvim/usr/bin:$PATH"' >> ~/.zshrc
+   # On arm64: use nvim-linux-arm64.appimage instead.
+
+   # Default ./install.sh on Linux does this AppImage extract for you.
+
+   # Ubuntu / Debian — older build from apt (fine for the bundled plugin set)
    sudo apt install neovim
    ```
 
-2. Install [vim-plug](https://github.com/junegunn/vim-plug):
+2. [vim-plug](https://github.com/junegunn/vim-plug): `./install.sh` downloads `plug.vim` if it is missing. By hand:
    ```sh
    sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
      https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
    ```
 
-3. Symlink or copy the config:
+3. `./install.sh` symlinks `~/.config/nvim/init.vim`; or:
    ```sh
    mkdir -p ~/.config/nvim
-   ln -s ~/projects/pb-configs/.vimrc ~/.config/nvim/init.vim
+   ln -s /path/to/repo/.vimrc ~/.config/nvim/init.vim
    ```
 
-4. Open Neovim and run `:PlugInstall`.
+4. Run `nvim +PlugInstall +qall` once (needs `git` and network). Telescope, **nvim-treesitter**, LSP, gitsigns, and lualine expect **Neovim 0.10+** — the default Linux install uses the AppImage; use **`--no-nvim-appimage`** only if you accept the older distro `neovim`. Install language parsers with `:TSInstall <lang>` (or `:TSInstall all`) inside Neovim.
 
 ### VSCode (`vscode.jsonc`)
 
-```sh
-# Linux
-cp vscode.jsonc /config/data/User/settings.json
-```
+Paths differ by install (e.g. `~/.config/Code/User/settings.json` on Linux). Copy or merge `vscode.jsonc` into your editor’s `settings.json`.
 
 Required extensions: `One Dark Pro`, `Prettier`, `Ruby LSP`, `Rails`.
-

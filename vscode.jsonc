@@ -2,8 +2,9 @@
 // VSCode settings.json
 //
 // Installation:
-//   Mac:    cp ~/projects/pb-configs/vscode.jsonc /config/data/User/settings.json
-//   Linux:  cp ~/projects/pb-configs/vscode.jsonc /config/data/User/settings.json
+//   Copy or merge into your editor user settings, e.g.:
+//   Linux:  ~/.config/Code/User/settings.json
+//   macOS:  ~/Library/Application Support/Code/User/settings.json
 //
 // Required extensions:
 //   One Dark Pro:  zhuangtongfa.material-theme

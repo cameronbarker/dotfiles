@@ -17,11 +17,13 @@
 "
 " 4. Point Neovim at this file — pick one option:
 "
-"    Option A — Symlink (edits to this file take effect immediately):
-"      ln -sf /config/projects/pb-configs/.vimrc ~/.config/nvim/init.vim
+"    Option A — From the repo: ./install.sh (symlinks this file to ~/.config/nvim/init.vim)
 "
-"    Option B — Source from init.vim (keeps your init.vim separate):
-"      echo 'source /config/projects/pb-configs/.vimrc' > ~/.config/nvim/init.vim
+"    Option B — Symlink manually:
+"      ln -sf /path/to/repo/.vimrc ~/.config/nvim/init.vim
+"
+"    Option C — Source from init.vim (keeps your init.vim separate):
+"      echo 'source /path/to/repo/.vimrc' > ~/.config/nvim/init.vim
 "
 " 5. Install plugins (only needed once you uncomment plugins in the Plugins section below):
 "
@@ -186,7 +188,7 @@ call plug#begin('~/.vim/plugged')
 Plug 'nvim-telescope/telescope.nvim'
 Plug 'nvim-lua/plenary.nvim'
 
-" -- Syntax / treesitter
+" -- Syntax / treesitter (needs Neovim 0.10+)
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
 
 " -- LSP
@@ -208,12 +210,23 @@ Plug 'catppuccin/nvim', { 'as': 'catppuccin' }
 
 call plug#end()
 
+lua << EOF
+local ok, configs = pcall(require, 'nvim-treesitter.configs')
+if ok then
+  configs.setup({
+    highlight = { enable = true },
+    indent = { enable = true },
+  })
+end
+EOF
+
 " -----------------------------------------------------------------------------
 " Colour scheme (uncomment after installing a theme plugin)
 " -----------------------------------------------------------------------------
 syntax enable
 set termguicolors
-colorscheme catppuccin
+" Before :PlugInstall, catppuccin is missing — avoid E185 on first open
+silent! colorscheme catppuccin
 
 " -----------------------------------------------------------------------------
 " Autocommands
@@ -224,4 +237,10 @@ augroup general
   autocmd BufWritePre * :%s/\s\+$//e
   " Return to last edit position when opening a file
   autocmd BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+augroup END
+
+" Start in insert mode when a normal file buffer is first read (not help/qf/netrw)
+augroup start_in_insert
+  autocmd!
+  autocmd BufReadPost * if empty(&buftype) && &filetype !=# 'netrw' | startinsert | endif
 augroup END

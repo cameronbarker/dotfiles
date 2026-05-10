@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tmux Workflow"
+  short_description: "Configure and validate tmux safely"
+  default_prompt: "Use this skill to edit, validate, and troubleshoot tmux configuration with minimal, safe changes."

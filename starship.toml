@@ -4,8 +4,8 @@
 #
 # Installation:
 #   1. Install Starship: curl -sS https://starship.rs/install.sh | sh
-#   2. Symlink this file:
-#        mkdir -p ~/.config && ln -s ~/projects/pb-configs/starship.toml ~/.config/starship.toml
+#   2. From this repo: ./install.sh   (symlinks to ~/.config/starship.toml)
+#      Or: mkdir -p ~/.config && ln -s /path/to/repo/starship.toml ~/.config/starship.toml
 # =============================================================================
 
 # Top-level format: order of segments in the prompt

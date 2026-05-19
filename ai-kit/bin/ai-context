@@ -152,6 +152,74 @@ ai_ctx_yaml_list() {
   ' "$file"
 }
 
+ai_ctx_risk_rules_md() {
+  local file="$1"
+  [[ -f "$file" ]] || return 0
+
+  awk '
+    function trim(s) {
+      sub(/^[[:space:]]+/, "", s)
+      sub(/[[:space:]]+$/, "", s)
+      return s
+    }
+    function unquote(s) {
+      s = trim(s)
+      if (s ~ /^".*"$/ || s ~ /^'\''.*'\''$/) {
+        s = substr(s, 2, length(s) - 2)
+      }
+      return s
+    }
+    function value_after_colon(line,    v) {
+      v = line
+      sub(/^[^:]+:[[:space:]]*/, "", v)
+      return unquote(v)
+    }
+    function flush_rule() {
+      if (path != "") {
+        printf "- path: `%s`", path
+        if (level != "") printf " | level: `%s`", level
+        if (action != "") printf " | action: `%s`", action
+        if (reason != "") printf " | reason: %s", reason
+        printf "\n"
+        count++
+      }
+      path=""; level=""; action=""; reason=""
+    }
+    {
+      line = $0
+      sub(/\r$/, "", line)
+      if (line ~ /^[[:space:]]*#/) next
+
+      if (line ~ /^rules:[[:space:]]*$/) {
+        in_rules = 1
+        next
+      }
+      if (in_rules && line ~ /^[^[:space:]]/ && line !~ /^rules:[[:space:]]*$/) {
+        flush_rule()
+        in_rules = 0
+      }
+      if (!in_rules) next
+
+      if (line ~ /^[[:space:]]*-[[:space:]]*path:[[:space:]]*/) {
+        flush_rule()
+        path = value_after_colon(line)
+      } else if (line ~ /^[[:space:]]*level:[[:space:]]*/) {
+        level = value_after_colon(line)
+      } else if (line ~ /^[[:space:]]*action:[[:space:]]*/) {
+        action = value_after_colon(line)
+      } else if (line ~ /^[[:space:]]*reason:[[:space:]]*/) {
+        reason = value_after_colon(line)
+      }
+    }
+    END {
+      flush_rule()
+      if (count == 0) {
+        print "- (no rules found)"
+      }
+    }
+  ' "$file"
+}
+
 force=0
 case "${1:-}" in
   --help|-h)
@@ -226,10 +294,20 @@ branch="unknown"
 sha="unknown"
 dirty=false
 if command -v git >/dev/null 2>&1; then
-  branch="$(git -C "$root" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
-  sha="$(git -C "$root" rev-parse HEAD 2>/dev/null || echo unknown)"
-  branch="$(printf '%s' "$branch" | tr -d '\r\n')"
-  sha="$(printf '%s' "$sha" | tr -d '\r\n')"
+  if branch_raw="$(git -C "$root" branch --show-current 2>/dev/null)"; then
+    branch_raw="$(printf '%s' "$branch_raw" | tr -d '\r\n')"
+    if [[ -n "$branch_raw" ]]; then
+      branch="$branch_raw"
+    else
+      branch="detached"
+    fi
+  fi
+  if sha_raw="$(git -C "$root" rev-parse --short HEAD 2>/dev/null)"; then
+    sha_raw="$(printf '%s' "$sha_raw" | tr -d '\r\n')"
+    if [[ -n "$sha_raw" ]]; then
+      sha="$sha_raw"
+    fi
+  fi
   if [[ -n "$(git -C "$root" status --short 2>/dev/null || true)" ]]; then
     dirty=true
   fi
@@ -375,6 +453,14 @@ mv "${out_dir}/project-overview.md.tmp" "${out_dir}/project-overview.md"
   echo
   echo "Configured risk file: \`${risk_file}\`"
   echo
+  if [[ -f "${root}/${risk_file}" ]]; then
+    echo "Configured rules:"
+    ai_ctx_risk_rules_md "${root}/${risk_file}"
+  else
+    echo "Configured rules:"
+    echo "- (risk config file not found)"
+  fi
+  echo
   echo "Risk source: __RISK_NOTE__"
 } > "${out_dir}/risk-zones.md"
 risk_note_escaped="$(printf '%s' "$risk_note" | sed 's/[\\&/]/\\&/g')"
@@ -391,21 +477,33 @@ if [[ -n "$risk_json" ]]; then
   } >> "${out_dir}/risk-zones.md"
 fi
 
-cat > "${out_dir}/generation-metadata.json" <<JSON
+source_paths_inspected=()
+for p in "${include_paths[@]}"; do
+  source_paths_inspected+=("$p")
+done
+source_paths_inspected+=(".codex/project.yml")
+
 {
-  "repo_name": "$(ai_kit_json_escape "${repo_name}")",
-  "project_type": "$(ai_kit_json_escape "${repo_type}")",
-  "config_file": "$(ai_kit_json_escape ".codex/project.yml")",
-  "risk_config_file": "$(ai_kit_json_escape "${risk_file}")",
-  "output_dir": "$(ai_kit_json_escape "${out_dir_rel}")",
-  "branch": "$(ai_kit_json_escape "$branch")",
-  "commit_sha": "$(ai_kit_json_escape "$sha")",
-  "generated_at": "$(ai_kit_now_iso)",
-  "dirty_working_tree": ${dirty},
-  "source_paths_inspected": [
-$(if [[ ${#include_paths[@]} -gt 0 ]]; then for p in "${include_paths[@]}"; do printf '    "%s",\n' "$(ai_kit_json_escape "$p")"; done; fi)    ".codex/project.yml"
-  ]
-}
-JSON
+  echo "{"
+  echo "  \"repo_name\": \"$(ai_kit_json_escape "${repo_name}")\","
+  echo "  \"project_type\": \"$(ai_kit_json_escape "${repo_type}")\","
+  echo "  \"config_file\": \"$(ai_kit_json_escape ".codex/project.yml")\","
+  echo "  \"risk_config_file\": \"$(ai_kit_json_escape "${risk_file}")\","
+  echo "  \"output_dir\": \"$(ai_kit_json_escape "${out_dir_rel}")\","
+  echo "  \"branch\": \"$(ai_kit_json_escape "$branch")\","
+  echo "  \"commit_sha\": \"$(ai_kit_json_escape "$sha")\","
+  echo "  \"generated_at\": \"$(ai_kit_now_iso)\","
+  echo "  \"dirty_working_tree\": ${dirty},"
+  echo "  \"source_paths_inspected\": ["
+  for ((i = 0; i < ${#source_paths_inspected[@]}; i++)); do
+    comma=","
+    if [[ $i -eq $((${#source_paths_inspected[@]} - 1)) ]]; then
+      comma=""
+    fi
+    printf '    "%s"%s\n' "$(ai_kit_json_escape "${source_paths_inspected[$i]}")" "$comma"
+  done
+  echo "  ]"
+  echo "}"
+} > "${out_dir}/generation-metadata.json"
 
 echo "Generated ai-context in ${out_dir}"

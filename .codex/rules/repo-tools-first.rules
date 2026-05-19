@@ -1,0 +1,37 @@
+## Repo Tools First Rule
+
+If `.codex/project.yml` exists, treat the repo as AI-kit bootstrapped.
+
+At session/task startup:
+- Check AI-kit command availability with:
+  - `command -v ai-risk`
+  - `command -v ai-context`
+  - `command -v ai-failure`
+  - `command -v ai-codex-prompt`
+- If `ai-context/` exists, use relevant generated files as orientation only.
+- Never auto-run `ai-context --force`.
+
+Use only the smallest relevant AI-kit tool:
+- `ai-risk` for path-based inspect/edit/review risk classification.
+- `ai-failure` to capture and summarize failing command runs.
+- `ai-context` generated docs for orientation, never as source of truth.
+- `ai-codex-prompt` for scoped handoffs/prompt shaping when helpful.
+
+Mode-specific behavior:
+- Inspect mode:
+  - Run `ai-risk --json <paths>` when target paths are known.
+  - Avoid broad repo exploration unless needed.
+- Debug mode:
+  - Prefer `ai-failure -- <command>` for failing commands.
+  - Use summary output before deeper manual inspection.
+- Edit mode:
+  - Before editing known targets, run `ai-risk --json <paths>`.
+  - If risk is critical/blocking, stop and request explicit approval.
+  - If risk is high, inspect first and state risk before edits.
+  - Run narrow, relevant validation after edits.
+- Review mode:
+  - Run `ai-risk --json` on changed files when possible.
+  - Use risk output to structure review severity/recommendations.
+
+Fallback:
+- If one or more AI-kit tools are unavailable on `PATH`, continue normally and report AI kit was unavailable for that step.

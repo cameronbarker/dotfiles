@@ -494,7 +494,39 @@ install_codex_config() {
   echo "Symlinked Codex AGENTS.md from ${codex_src} to ${codex_dest}"
 }
 
+install_codex_skills() {
+  local codex_skills_src_dir="${SCRIPT_DIR}/.codex/skills"
+  local codex_skills_dest_dir="${HOME}/.codex/skills"
+
+  [[ -d "${codex_skills_src_dir}" ]] || return 0
+
+  mkdir -p "${codex_skills_dest_dir}"
+
+  local src
+  for src in "${codex_skills_src_dir}"/*; do
+    [[ -e "${src}" ]] || continue
+    [[ -d "${src}" ]] || continue
+    [[ -f "${src}/SKILL.md" ]] || continue
+
+    local name dest
+    name="$(basename "${src}")"
+    dest="${codex_skills_dest_dir}/${name}"
+
+    if [[ -L "${dest}" ]]; then
+      echo "Skip ${dest}: symlink already exists."
+    elif [[ -e "${dest}" ]]; then
+      echo "Skip ${dest}: path exists and is not a symlink."
+    else
+      ln -sf "${src}" "${dest}"
+    fi
+  done
+
+  echo "Symlinked Codex skills from ${codex_skills_src_dir} to ${codex_skills_dest_dir}"
+}
+
 install_codex_config
+
+install_codex_skills
 
 install_ai_kit_bins() {
   local bin_dir="${HOME}/.local/bin"

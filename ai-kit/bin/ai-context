@@ -24,6 +24,134 @@ Refuses to overwrite a non-empty ai-context/ directory unless --force is provide
 USAGE
 }
 
+ai_ctx_yaml_scalar() {
+  local file="$1" target="$2"
+  [[ -f "$file" ]] || return 0
+
+  awk -v target="$target" '
+    function trim(s) {
+      sub(/^[[:space:]]+/, "", s)
+      sub(/[[:space:]]+$/, "", s)
+      return s
+    }
+    function unquote(s) {
+      s = trim(s)
+      if (s ~ /^".*"$/ || s ~ /^'\''.*'\''$/) {
+        s = substr(s, 2, length(s) - 2)
+      }
+      return s
+    }
+    {
+      line = $0
+      sub(/\r$/, "", line)
+      if (line ~ /^[[:space:]]*#/ || line ~ /^[[:space:]]*$/) next
+
+      indent = match(line, /[^ ]/) - 1
+      if (indent < 0) indent = 0
+      content = substr(line, indent + 1)
+
+      while (depth > 0 && indent <= indents[depth]) {
+        depth--
+      }
+
+      if (content ~ /^[A-Za-z0-9_]+:[[:space:]]*/) {
+        key = content
+        sub(/:.*/, "", key)
+        val = content
+        sub(/^[^:]+:[[:space:]]*/, "", val)
+
+        depth++
+        keys[depth] = key
+        indents[depth] = indent
+
+        path = keys[1]
+        for (i = 2; i <= depth; i++) path = path "." keys[i]
+        current = path
+
+        if (current == target && val != "") {
+          val = trim(val)
+          if (val !~ /^\[.*\]$/) {
+            print unquote(val)
+            exit
+          }
+        }
+      }
+    }
+  ' "$file"
+}
+
+ai_ctx_yaml_list() {
+  local file="$1" target="$2"
+  [[ -f "$file" ]] || return 0
+
+  awk -v target="$target" '
+    function trim(s) {
+      sub(/^[[:space:]]+/, "", s)
+      sub(/[[:space:]]+$/, "", s)
+      return s
+    }
+    function unquote(s) {
+      s = trim(s)
+      if (s ~ /^".*"$/ || s ~ /^'\''.*'\''$/) {
+        s = substr(s, 2, length(s) - 2)
+      }
+      return s
+    }
+    {
+      line = $0
+      sub(/\r$/, "", line)
+      if (line ~ /^[[:space:]]*#/ || line ~ /^[[:space:]]*$/) next
+
+      indent = match(line, /[^ ]/) - 1
+      if (indent < 0) indent = 0
+      content = substr(line, indent + 1)
+
+      while (depth > 0 && indent <= indents[depth]) {
+        depth--
+      }
+
+      if (content ~ /^-[[:space:]]+/) {
+        item = substr(content, 3)
+        if (current == target) {
+          print unquote(item)
+        }
+        next
+      }
+
+      if (content ~ /^[A-Za-z0-9_]+:[[:space:]]*/) {
+        key = content
+        sub(/:.*/, "", key)
+        val = content
+        sub(/^[^:]+:[[:space:]]*/, "", val)
+
+        depth++
+        keys[depth] = key
+        indents[depth] = indent
+
+        path = keys[1]
+        for (i = 2; i <= depth; i++) path = path "." keys[i]
+        current = path
+
+        if (current == target) {
+          val = trim(val)
+          if (val ~ /^\[.*\]$/) {
+            inner = val
+            sub(/^\[/, "", inner)
+            sub(/\]$/, "", inner)
+            n = split(inner, arr, ",")
+            for (j = 1; j <= n; j++) {
+              item = unquote(arr[j])
+              if (item != "") print item
+            }
+          } else if (val != "") {
+            print unquote(val)
+          }
+        }
+      }
+    }
+  ' "$file"
+}
+
 force=0
 case "${1:-}" in
   --help|-h)
@@ -42,7 +170,46 @@ if [[ "$#" -gt 0 ]]; then
 fi
 
 root="$(ai_kit_repo_root)"
-out_dir="${root}/ai-context"
+config_file="${root}/.codex/project.yml"
+
+if [[ ! -f "$config_file" ]]; then
+  echo "Missing required config: .codex/project.yml" >&2
+  echo "Create one from ai-kit/templates/project.yml.example" >&2
+  exit 2
+fi
+
+repo_name="$(ai_ctx_yaml_scalar "$config_file" "project.name")"
+repo_type="$(ai_ctx_yaml_scalar "$config_file" "project.type")"
+risk_file="$(ai_ctx_yaml_scalar "$config_file" "risk.config_file")"
+out_dir_rel="$(ai_ctx_yaml_scalar "$config_file" "ai_context.output_dir")"
+test_cmd="$(ai_ctx_yaml_scalar "$config_file" "commands.test")"
+
+primary_languages=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && primary_languages+=("$line")
+done < <(ai_ctx_yaml_list "$config_file" "project.primary_languages")
+
+include_paths=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && include_paths+=("$line")
+done < <(ai_ctx_yaml_list "$config_file" "ai_context.include")
+
+exclude_paths=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && exclude_paths+=("$line")
+done < <(ai_ctx_yaml_list "$config_file" "ai_context.exclude")
+
+run_cmds=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && run_cmds+=("$line")
+done < <(ai_ctx_yaml_list "$config_file" "commands.run")
+
+repo_name="${repo_name:-}"
+repo_type="${repo_type:-unknown}"
+risk_file="${risk_file:-.codex/risk-paths.yml}"
+out_dir_rel="${out_dir_rel:-ai-context}"
+test_cmd="${test_cmd:-}"
+out_dir="${root}/${out_dir_rel}"
 
 if [[ -d "$out_dir" ]]; then
   if find "$out_dir" -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
@@ -61,6 +228,8 @@ dirty=false
 if command -v git >/dev/null 2>&1; then
   branch="$(git -C "$root" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
   sha="$(git -C "$root" rev-parse HEAD 2>/dev/null || echo unknown)"
+  branch="$(printf '%s' "$branch" | tr -d '\r\n')"
+  sha="$(printf '%s' "$sha" | tr -d '\r\n')"
   if [[ -n "$(git -C "$root" status --short 2>/dev/null || true)" ]]; then
     dirty=true
   fi
@@ -86,65 +255,128 @@ MD
 cat > "${out_dir}/project-overview.md" <<'MD'
 # Project Overview
 
-- Repo: __REPO_NAME__
-- Type: dotfiles/tooling
-- Primary stack: Bash shell scripts and configuration files
-- Key entrypoints: `install.sh`, `uninstall.sh`, `.terminal`
+- Project name: __PROJECT_NAME__
+- Project type: __PROJECT_TYPE__
 
 Generated context only; inspect live files before implementation.
 MD
-repo_name_escaped="$(printf '%s' "$(basename "$root")" | sed 's/[\\&/]/\\&/g')"
-awk -v v="${repo_name_escaped}" '{gsub(/__REPO_NAME__/, v); print}' \
+project_name_escaped="$(printf '%s' "${repo_name}" | sed 's/[\\&/]/\\&/g')"
+project_type_escaped="$(printf '%s' "${repo_type}" | sed 's/[\\&/]/\\&/g')"
+awk -v name="${project_name_escaped}" -v type="${project_type_escaped}" '
+  { gsub(/__PROJECT_NAME__/, name); gsub(/__PROJECT_TYPE__/, type); print }
+' \
   "${out_dir}/project-overview.md" > "${out_dir}/project-overview.md.tmp"
 mv "${out_dir}/project-overview.md.tmp" "${out_dir}/project-overview.md"
+{
+  if [[ ${#primary_languages[@]} -gt 0 ]]; then
+    printf -- "- Primary languages: "
+    printf '%s' "${primary_languages[0]}"
+    for ((i = 1; i < ${#primary_languages[@]}; i++)); do
+      printf ', %s' "${primary_languages[i]}"
+    done
+    printf '\n'
+  else
+    echo "- Primary languages: unknown"
+  fi
+} >> "${out_dir}/project-overview.md"
 
-cat > "${out_dir}/architecture-map.md" <<'MD'
-# Architecture Map
+{
+  echo "# Architecture Map"
+  echo
+  echo "Configured include paths:"
+  if [[ ${#include_paths[@]} -eq 0 ]]; then
+    echo "- (none configured)"
+  else
+    for p in "${include_paths[@]}"; do
+      echo "- \`$p\`"
+    done
+  fi
+  echo
+  echo "Configured exclude paths:"
+  if [[ ${#exclude_paths[@]} -eq 0 ]]; then
+    echo "- (none configured)"
+  else
+    for p in "${exclude_paths[@]}"; do
+      echo "- \`$p\`"
+    done
+  fi
+  echo
+  echo "Observed top-level paths:"
+  while IFS= read -r entry; do
+    [[ -n "$entry" ]] && echo "- \`$entry\`"
+  done < <(find "$root" -mindepth 1 -maxdepth 1 -exec basename {} \; | LC_ALL=C sort)
+} > "${out_dir}/architecture-map.md"
 
-- `.terminal`: shell bootstrap and module load order
-- `terminal/`: aliases, path, utilities, and integrations
-- `.codex/`: agent guidance, rules, and skills
-- `ai-kit/`: reusable AI/Codex helper scripts
-MD
+{
+  echo "# Commands"
+  echo
+  if [[ -n "$test_cmd" ]]; then
+    echo "Test command:"
+    echo '```bash'
+    echo "$test_cmd"
+    echo '```'
+    echo
+  else
+    echo "Test command: (not configured)"
+    echo
+  fi
 
-cat > "${out_dir}/commands.md" <<'MD'
-# Commands
+  if [[ ${#run_cmds[@]} -gt 0 ]]; then
+    echo "Run commands:"
+    echo '```bash'
+    for c in "${run_cmds[@]}"; do
+      echo "$c"
+    done
+    echo '```'
+    echo
+  else
+    echo "Run commands: (not configured)"
+    echo
+  fi
 
-- Validate shell scripts:
-```bash
-bash -n install.sh uninstall.sh
-```
+  echo "Risk summary:"
+  echo '```bash'
+  echo "ai-risk --json"
+  echo '```'
+  echo
+  echo "Generate context:"
+  echo '```bash'
+  echo "ai-context --force"
+  echo '```'
+} > "${out_dir}/commands.md"
 
-- Risk summary:
-```bash
-ai-kit/bin/ai-risk --json
-```
+{
+  echo "# Integration Points"
+  echo
+  echo "Configured include paths:"
+  if [[ ${#include_paths[@]} -eq 0 ]]; then
+    echo "- (none configured)"
+  else
+    for p in "${include_paths[@]}"; do
+      echo "- \`$p\`"
+    done
+  fi
+  echo
+  echo "Detected AI/Codex files:"
+  found_any=0
+  for p in AGENTS.md .codex/AGENTS.md .codex/project.yml .codex/risk-paths.yml .ai/context; do
+    if [[ -e "${root}/${p}" ]]; then
+      echo "- \`${p}\`"
+      found_any=1
+    fi
+  done
+  if [[ "$found_any" -eq 0 ]]; then
+    echo "- (none found)"
+  fi
+} > "${out_dir}/integration-points.md"
 
-- Generate context:
-```bash
-ai-kit/bin/ai-context --force
-```
-MD
-
-cat > "${out_dir}/integration-points.md" <<'MD'
-# Integration Points
-
-- Shell bootstrap: `.terminal`
-- PATH convention: `terminal/path.sh`
-- Agent guidance: `AGENTS.md`, `.codex/AGENTS.md`
-- Risk policy: `.codex/risk-paths.yml`
-MD
-
-cat > "${out_dir}/risk-zones.md" <<'MD'
-# Risk Zones
-
-- `.codex/**`: agent policy and workflow controls
-- `install.sh`, `uninstall.sh`: system-level shell actions
-- `.terminal`, `terminal/**`: shell startup behavior
-- `**/*secret*`: potential sensitive data handling
-
-Risk source: __RISK_NOTE__
-MD
+{
+  echo "# Risk Zones"
+  echo
+  echo "Configured risk file: \`${risk_file}\`"
+  echo
+  echo "Risk source: __RISK_NOTE__"
+} > "${out_dir}/risk-zones.md"
 risk_note_escaped="$(printf '%s' "$risk_note" | sed 's/[\\&/]/\\&/g')"
 awk -v v="${risk_note_escaped}" '{gsub(/__RISK_NOTE__/, v); print}' \
   "${out_dir}/risk-zones.md" > "${out_dir}/risk-zones.md.tmp"
@@ -161,20 +393,17 @@ fi
 
 cat > "${out_dir}/generation-metadata.json" <<JSON
 {
-  "repo_name": "$(ai_kit_json_escape "$(basename "$root")")",
+  "repo_name": "$(ai_kit_json_escape "${repo_name}")",
+  "project_type": "$(ai_kit_json_escape "${repo_type}")",
+  "config_file": "$(ai_kit_json_escape ".codex/project.yml")",
+  "risk_config_file": "$(ai_kit_json_escape "${risk_file}")",
+  "output_dir": "$(ai_kit_json_escape "${out_dir_rel}")",
   "branch": "$(ai_kit_json_escape "$branch")",
   "commit_sha": "$(ai_kit_json_escape "$sha")",
   "generated_at": "$(ai_kit_now_iso)",
   "dirty_working_tree": ${dirty},
   "source_paths_inspected": [
-    "AGENTS.md",
-    ".codex/AGENTS.md",
-    "README.md",
-    "install.sh",
-    "uninstall.sh",
-    ".terminal",
-    "terminal/",
-    ".codex/rules/"
+$(if [[ ${#include_paths[@]} -gt 0 ]]; then for p in "${include_paths[@]}"; do printf '    "%s",\n' "$(ai_kit_json_escape "$p")"; done; fi)    ".codex/project.yml"
   ]
 }
 JSON

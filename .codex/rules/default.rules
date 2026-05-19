@@ -1,0 +1,5 @@
+# Default Rules
+
+- Start with the smallest safe change.
+- Prefer inspect-only passes when requirements are unclear.
+- Document assumptions and validation results in final responses.

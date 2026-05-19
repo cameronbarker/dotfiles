@@ -1,0 +1,9 @@
+[project]
+name = "dotfiles"
+
+[defaults]
+inspect_first = true
+safe_mode = true
+
+[notes]
+guidance = "Use inspect-first for unclear or risky changes; preserve existing dotfile conventions."

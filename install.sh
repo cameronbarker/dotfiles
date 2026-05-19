@@ -496,6 +496,32 @@ install_codex_config() {
 
 install_codex_config
 
+install_ai_kit_bins() {
+  local bin_dir="${HOME}/.local/bin"
+  local kit_bin_dir="${SCRIPT_DIR}/ai-kit/bin"
+
+  [[ -d "${kit_bin_dir}" ]] || return 0
+  mkdir -p "${bin_dir}"
+
+  local commands=(ai-context ai-risk ai-failure ai-codex-prompt)
+  for cmd in "${commands[@]}"; do
+    local src="${kit_bin_dir}/${cmd}"
+    local dest="${bin_dir}/${cmd}"
+
+    [[ -x "${src}" ]] || continue
+
+    if [[ -L "${dest}" ]]; then
+      ln -sf "${src}" "${dest}"
+    elif [[ -e "${dest}" ]]; then
+      echo "Skip ${dest}: exists and is not a symlink." >&2
+    else
+      ln -sf "${src}" "${dest}"
+    fi
+  done
+}
+
+install_ai_kit_bins
+
 install_tmux_config() {
   local tmux_src="${SCRIPT_DIR}/.tmux.conf"
   local tmux_dest="${HOME}/.tmux.conf"

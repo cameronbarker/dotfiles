@@ -93,6 +93,18 @@ if [[ "$WITH_GIT" == true ]]; then
   remove_symlink_if_ours "${HOME}/.gitconfig" "${SCRIPT_DIR}/.gitconfig"
 fi
 
+remove_ai_kit_bins() {
+  local bin_dir="${HOME}/.local/bin"
+  local kit_bin_dir="${SCRIPT_DIR}/ai-kit/bin"
+  local commands=(ai-context ai-risk ai-failure ai-codex-prompt)
+
+  for cmd in "${commands[@]}"; do
+    remove_symlink_if_ours "${bin_dir}/${cmd}" "${kit_bin_dir}/${cmd}"
+  done
+}
+
+remove_ai_kit_bins
+
 strip_rc_blocks "${HOME}/.bashrc"
 strip_rc_blocks "${HOME}/.zshrc"
 

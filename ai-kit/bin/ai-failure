@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=ai-kit/lib/common.sh
+source "${BIN_DIR}/../lib/common.sh"
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  echo "Usage: ai-failure -- <command ...>"
+  exit 0
+fi
+
+if [[ "${1:-}" != "--" ]]; then
+  echo "Usage: ai-failure -- <command ...>" >&2
+  exit 64
+fi
+shift
+
+if [[ "$#" -eq 0 ]]; then
+  echo "No command provided." >&2
+  exit 64
+fi
+
+root="$(ai_kit_repo_root)"
+out_dir="${root}/ai-context"
+out_file="${out_dir}/failure-summary.json"
+mkdir -p "$out_dir"
+
+stdout_file="$(mktemp)"
+stderr_file="$(mktemp)"
+
+set +e
+"$@" >"$stdout_file" 2>"$stderr_file"
+status=$?
+set -e
+
+stdout_sample="$(head -n 40 "$stdout_file")"
+stderr_sample="$(head -n 40 "$stderr_file")"
+cmd_str="$(printf '%q ' "$@" | sed 's/[[:space:]]*$//')"
+
+cat > "$out_file" <<JSON
+{
+  "generated_at": "$(ai_kit_now_iso)",
+  "repo_root": "$(ai_kit_json_escape "$root")",
+  "command": "$(ai_kit_json_escape "$cmd_str")",
+  "exit_code": ${status},
+  "stdout_sample": "$(ai_kit_json_escape "$stdout_sample")",
+  "stderr_sample": "$(ai_kit_json_escape "$stderr_sample")"
+}
+JSON
+
+rm -f "$stdout_file" "$stderr_file"
+
+echo "Wrote ${out_file}"
+exit "$status"

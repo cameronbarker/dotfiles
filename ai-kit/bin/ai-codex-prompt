@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=ai-kit/lib/common.sh
+source "${BIN_DIR}/../lib/common.sh"
+
+usage() {
+  echo 'Usage: ai-codex-prompt <mode> <goal>'
+  echo 'Example: ai-codex-prompt inspect "review shell startup risk"'
+}
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  usage
+  exit 0
+fi
+
+mode="${1:-}"
+shift || true
+goal="${*:-}"
+if [[ -z "$mode" || -z "$goal" ]]; then
+  usage >&2
+  exit 64
+fi
+
+root="$(ai_kit_repo_root)"
+risk_summary="Risk summary unavailable"
+if [[ -x "${BIN_DIR}/ai-risk" ]]; then
+  risk_json="$("${BIN_DIR}/ai-risk" --json 2>/dev/null || true)"
+  if [[ -n "$risk_json" ]]; then
+    risk_summary="${risk_json}"
+  fi
+fi
+
+ctx_hint="ai-context not generated yet"
+if [[ -d "${root}/ai-context" ]]; then
+  files="$(ls -1 "${root}/ai-context" 2>/dev/null | tr '\n' ',' | sed 's/,$//')"
+  ctx_hint="available files: ${files}"
+fi
+
+cat <<PROMPT
+Mode: ${mode}
+Goal: ${goal}
+
+Working directory: ${root}
+
+Constraints:
+- Inspect live repository files before implementation decisions.
+- Treat generated context as orientation only.
+- Keep changes minimal, reversible, and scoped.
+
+Risk summary:
+${risk_summary}
+
+AI context status:
+${ctx_hint}
+
+Requested output:
+1) Concise findings tied to repo paths
+2) Clear implementation or investigation steps
+3) Validation commands and expected outcomes
+PROMPT

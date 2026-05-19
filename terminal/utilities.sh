@@ -5,6 +5,33 @@
 export AI_CLI="${AI_CLI:-codex}"
 ai() { command "${AI_CLI}" "$@"; }
 
+_ai_kit_command() {
+  local cmd repo_root repo_cmd
+  cmd="$1"
+
+  if repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+    repo_cmd="${repo_root}/ai-kit/bin/${cmd}"
+    if [ -x "${repo_cmd}" ]; then
+      command "${repo_cmd}" "${@:2}"
+      return
+    fi
+  fi
+
+  if command -v "${cmd}" >/dev/null 2>&1; then
+    command "${cmd}" "${@:2}"
+    return
+  fi
+
+  echo "AI kit command not found: ${cmd}" >&2
+  echo "Hint: expected repo-local command at ai-kit/bin/${cmd} or install ${cmd} on PATH." >&2
+  return 1
+}
+
+aictx() { _ai_kit_command "ai-context" "$@"; }
+airisk() { _ai_kit_command "ai-risk" "$@"; }
+aifail() { _ai_kit_command "ai-failure" "$@"; }
+aiprompt() { _ai_kit_command "ai-codex-prompt" "$@"; }
+
 # make a directory and cd into it
 mkcd() { mkdir -p "$1" && cd "$1"; }
 

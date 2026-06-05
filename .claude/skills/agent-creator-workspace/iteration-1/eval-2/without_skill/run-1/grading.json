@@ -1,0 +1,78 @@
+{
+  "expectations": [
+    {
+      "text": "Response does not produce a single agent .md file covering all listed domains (code review, deployments, migrations, performance)",
+      "passed": true,
+      "evidence": "Transcript states 'Did not produce an agent definition file because the inputs required to make one effective were not provided.' Outputs directory contains only response.md and transcript.md — no agent definition file was created."
+    },
+    {
+      "text": "Response proposes at least 3 distinct narrower agent alternatives",
+      "passed": true,
+      "evidence": "Response proposes 5 distinct alternatives: code-reviewer, bug-investigator, migration-writer, deploy-verifier, perf-analyzer — each described with a one-line scope summary."
+    },
+    {
+      "text": "Response explains why the request is too broad to be a useful agent",
+      "passed": true,
+      "evidence": "Response gives three explicit reasons: (1) agents with broad scope 'perform poorly at everything', (2) 'there's no clear success criterion for handles everything', (3) 'broad scope means the agent will make judgment calls...which leads to surprises'."
+    },
+    {
+      "text": "Proposed alternatives each have a specific, measurable scope",
+      "passed": true,
+      "evidence": "Each alternative includes a named trigger/input and expected output (e.g., 'takes a failing test or error report, traces it to root cause, proposes a fix'; 'generates database migration files from a schema diff or feature description'). Scopes are specific and bounded, though not numerically quantified."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Write": 1
+    },
+    "total_tool_calls": 1,
+    "total_steps": 1,
+    "errors_encountered": 0,
+    "output_chars": 1128,
+    "transcript_chars": 836
+  },
+  "timing": {
+    "executor_duration_seconds": 101.3,
+    "total_duration_seconds": 101.3
+  },
+  "claims": [
+    {
+      "claim": "Did not produce an agent definition file",
+      "type": "process",
+      "verified": true,
+      "evidence": "outputs/ directory contains only response.md and transcript.md — no .md agent file was created"
+    },
+    {
+      "claim": "Broad-scope agents produce inconsistent results",
+      "type": "factual",
+      "verified": true,
+      "evidence": "This is the rationale given in both transcript and response.md; consistent with known agent design principles"
+    },
+    {
+      "claim": "Offered two paths forward: break into focused agents or answer clarifying questions",
+      "type": "process",
+      "verified": true,
+      "evidence": "response.md offers the list of 5 narrower agents and then a section 'If you still want a single agent' with 4 clarifying questions"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "Expectation 4 uses 'measurable scope' — the alternatives are specific but not numerically measurable; graded PASS on specificity of bounded scope rather than quantitative metrics"
+    ],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      "Expectation 4 could be sharpened to distinguish 'specific scope' from 'measurable scope' — if numeric or testable criteria are required, some alternatives (e.g., 'code-reviewer') would need more detail to truly be measurable",
+      "Consider adding an expectation that the response does NOT answer the clarifying questions itself (i.e., does not invent constraints to produce an agent anyway)"
+    ],
+    "overall": "All 4 expectations passed. The without_skill response correctly refused to produce a broad-scope agent, gave a clear rationale, and proposed 5 focused alternatives with specific scopes. The response quality is high for a scope-narrowing task."
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "expectations": [
+    {
+      "text": "Response does not produce a single agent .md file covering all listed domains (code review, deployments, migrations, performance)",
+      "passed": true,
+      "evidence": "Only two files were written to outputs/: response.md and transcript.md. No agent .md file was created. The transcript explicitly states 'Decision: Do not create the agent. Apply scope-narrowing guidance.'"
+    },
+    {
+      "text": "Response proposes at least 3 distinct narrower agent alternatives",
+      "passed": true,
+      "evidence": "response.md proposes 5 focused alternatives: (1) PR Code Review Agent, (2) Bug Fix Agent, (3) Database Migration Agent, (4) Deployment Readiness Agent, (5) Performance Audit Agent — all clearly distinct workflows."
+    },
+    {
+      "text": "Response explains why the request is too broad to be a useful agent",
+      "passed": true,
+      "evidence": "The 'Why This Cannot Be One Agent' section gives four specific reasons: no single done state, no ownership boundary, no safe default mode (mode conflict between Infra Cautious/Inspect Only/Debug), and cannot be validated with any test prompt."
+    },
+    {
+      "text": "Proposed alternatives each have a specific, measurable scope",
+      "passed": true,
+      "evidence": "Each alternative names a default mode (Inspect Only / Debug / Infra Cautious), a clear input trigger (e.g. 'failing test or stack trace', 'schema change requirement', 'slow endpoint'), and an explicit done state (e.g. 'structured review with file-level findings', 'go/no-go report with blockers listed', 'generates the migration file... stops before running it')."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "read": 1,
+      "write": 1
+    },
+    "total_tool_calls": 2,
+    "total_steps": 4,
+    "errors_encountered": 0,
+    "output_chars": 1745,
+    "transcript_chars": 1936
+  },
+  "timing": {
+    "executor_duration_seconds": 52.7,
+    "total_duration_seconds": 52.7
+  },
+  "claims": [
+    {
+      "claim": "Skill explicitly names 'Full Stack Senior Engineer Agent' as a bad idea",
+      "type": "factual",
+      "verified": true,
+      "evidence": "response.md quotes this directly: 'Bad idea: Full Stack Senior Engineer Agent' — consistent with the skill's known guidance on over-broad agents"
+    },
+    {
+      "claim": "Five focused alternatives were proposed instead of one broad agent",
+      "type": "process",
+      "verified": true,
+      "evidence": "response.md contains a 'Proposed Focused Agents' section listing all five with distinct modes and done states"
+    },
+    {
+      "claim": "Response asks the user to pick one workflow before producing a full agent file",
+      "type": "process",
+      "verified": true,
+      "evidence": "Final paragraph in response.md: 'If you want to proceed, tell me which workflow to build first and I will produce the full agent file, test prompts, and validation commands.'"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      "The eval prompt could also test that the response correctly identifies mode conflicts — it's a strong signal of agent-quality reasoning but not currently a graded expectation.",
+      "Consider adding an expectation that checks the response does NOT start building any agent scaffolding (e.g. no trigger, no default_mode field written) — currently expectation 1 only checks for the absence of an .md file."
+    ],
+    "overall": "Clean 4/4 pass. The with_skill response correctly declined to produce the over-broad agent, gave a well-reasoned explanation, and proposed five scoped alternatives each with a named mode, input trigger, and done state. All graded expectations are met with strong evidence."
+  }
+}

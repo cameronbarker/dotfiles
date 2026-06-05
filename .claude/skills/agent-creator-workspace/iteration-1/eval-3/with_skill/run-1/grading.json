@@ -1,0 +1,87 @@
+{
+  "expectations": [
+    {
+      "text": "Improved output contains a ## Stop Conditions or ## Safety section that was absent in the original",
+      "passed": true,
+      "evidence": "The improved agent contains '## Safety / Stop Conditions' with 8 explicit stop conditions. The original had no such section."
+    },
+    {
+      "text": "Improved output contains ### Does Not Own section clarifying what the agent should not touch",
+      "passed": true,
+      "evidence": "The improved agent contains '### Does Not Own' under '## Scope', listing: broad refactoring, architecture decisions, auth/authz logic, database schemas/migrations, infra/deployment config, dependency upgrades, and files outside task scope."
+    },
+    {
+      "text": "The original purpose (project task automation) is preserved — not replaced with a completely different agent",
+      "passed": true,
+      "evidence": "The improved agent retains the same core purpose: executing project tasks (features, bugs, config, docs) within a repository. The transcript explicitly states 'The intent (executing project tasks) is kept.'"
+    },
+    {
+      "text": "Stop conditions are generalized rules (e.g. 'do not modify database schemas') rather than specific file-name prohibitions",
+      "passed": true,
+      "evidence": "All stop conditions reference categories (authentication behavior, database schemas, payment logic, infrastructure/CI/deployment config) rather than specific filenames. The transcript references the skill guidance on generalization and confirms it was applied."
+    },
+    {
+      "text": "Improved output contains a ## Validation section with a concrete command or check",
+      "passed": true,
+      "evidence": "The improved agent contains '## Validation' with a tiered preference: targeted unit test for changed function/module, typecheck for changed files only, lint for touched files, and full build only if a shared interface is affected."
+    },
+    {
+      "text": "The mission statement is more specific than 'help with the project'",
+      "passed": true,
+      "evidence": "Original: 'I help with project tasks.' Improved: 'Executes scoped, explicitly-defined project tasks: adding features, fixing bugs, updating configuration, and editing documentation within a single well-understood repository. Does not perform open-ended exploration or refactors beyond the stated task.'"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "Read": 2,
+      "Write": 1
+    },
+    "total_tool_calls": 3,
+    "total_steps": 4,
+    "errors_encountered": 0,
+    "output_chars": 2682,
+    "transcript_chars": 5148
+  },
+  "timing": {
+    "executor_duration_seconds": 112.6,
+    "total_duration_seconds": 112.6
+  },
+  "claims": [
+    {
+      "claim": "Stop conditions are written as categories rather than specific file names",
+      "type": "process",
+      "verified": true,
+      "evidence": "Safety section lists categories: auth/authz, database schemas/migrations, payment logic, file deletion, new dependencies, infra/CI/deployment, out-of-scope changes, invariant conflicts — no specific filenames."
+    },
+    {
+      "claim": "Two user complaints (touches files it shouldn't, doesn't know when to stop) are addressed",
+      "type": "quality",
+      "verified": true,
+      "evidence": "Does Not Own + stop conditions + scope-creep decision rule address the first complaint. Stop conditions + required inputs + decision rules address the second."
+    },
+    {
+      "claim": "Persona language was removed",
+      "type": "process",
+      "verified": true,
+      "evidence": "Original had 'I am a senior software engineer agent.' The improved agent contains no persona language — Purpose section states what the agent does, not what it is."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      "Consider adding an expectation that verifies the Required Inputs section exists, since it is a key structural addition that prevents the agent from starting without a defined done state.",
+      "The Validation section includes preferred commands but no concrete runnable example (e.g. 'npm test -- --testPathPattern=<file>'). A future expectation could require at least one example command string."
+    ],
+    "overall": "All 6 expectations passed. The improved agent is a substantial upgrade from the weak sample: it adds ownership boundaries, generalized stop conditions, a validation tier, a concrete mission statement, and a structured output format — all without deviating from the original purpose."
+  }
+}

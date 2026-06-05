@@ -1,0 +1,47 @@
+{
+  "skill_name": "agent-creator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want an agent that reviews my git diff before I commit and flags hardcoded secrets, API keys, or connection strings. It should never modify files — just report what it found.",
+      "expected_output": "A complete agent .md file in Inspect Only mode. The agent owns secret/credential detection in diffs. It has a workflow with grep/regex steps, stop conditions preventing file edits, a validation section, a final output format, and 2-3 realistic test prompts. The mission is specific — not a generic persona.",
+      "files": [],
+      "expectations": [
+        "Output contains a ## Mode section specifying Inspect Only",
+        "Output contains a ## Scope section with ### Owns and ### Does Not Own subsections",
+        "Output contains a stop conditions or safety section listing file editing as prohibited",
+        "Output contains a ## Validation section",
+        "Output contains a ## Workflow section with numbered steps",
+        "Output contains a final output format section",
+        "Output does not use generic persona language like 'senior engineer' or 'expert developer'",
+        "Output includes 2 or more test prompts with expected behavior descriptions"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Create a full-stack engineering agent that handles all frontend and backend work — code reviews, bug fixes, deployments, database migrations, performance tuning, and whatever else is needed.",
+      "expected_output": "The response should push back on the too-broad scope and propose 3 or more narrower agent alternatives. It should NOT produce a single all-encompassing agent .md file. It should explain why the broad request is problematic and offer concrete narrower options.",
+      "files": [],
+      "expectations": [
+        "Response does not produce a single agent .md file covering all listed domains (code review, deployments, migrations, performance)",
+        "Response proposes at least 3 distinct narrower agent alternatives",
+        "Response explains why the request is too broad to be a useful agent",
+        "Proposed alternatives each have a specific, measurable scope"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Here's my agent file — it keeps touching files it shouldn't and doesn't know when to stop. Can you improve it?\n\n---\n\n# Agent: Project Automation Agent\n\n## Purpose\nI am a senior software engineer agent. I help with project tasks.\n\n## When to Use\nUse me when you need help with the project.\n\n## Workflow\n1. Look at the project\n2. Figure out what needs to be done\n3. Make the changes\n4. Report back\n\n## Output\nTell the user what happened.",
+      "expected_output": "An improved agent .md file that preserves the original intent (project task automation) while adding: a specific mission statement, ## Scope with ### Owns and ### Does Not Own, ## Stop Conditions listing risky actions to pause before, ## Validation with a concrete command, a proper ## Output Format. Stop conditions should be general rules, not file-name-specific prohibitions.",
+      "files": [],
+      "expectations": [
+        "Improved output contains a ## Stop Conditions or ## Safety section that was absent in the original",
+        "Improved output contains ### Does Not Own section clarifying what the agent should not touch",
+        "The original purpose (project task automation) is preserved — not replaced with a completely different agent",
+        "Stop conditions are generalized rules (e.g. 'do not modify database schemas') rather than specific file-name prohibitions",
+        "Improved output contains a ## Validation section with a concrete command or check",
+        "The mission statement is more specific than 'help with the project'"
+      ]
+    }
+  ]
+}

@@ -1,5 +1,0 @@
-# Git Safety Rules
-
-- Use read-only git commands by default.
-- Do not commit, push, merge, rebase, reset, clean, or stash unless explicitly requested.
-- Confirm before any history-rewriting or destructive git operation.

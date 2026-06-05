@@ -1,0 +1,15 @@
+{
+  "eval_id": 1,
+  "eval_name": "secret-scanner",
+  "prompt": "I want an agent that reviews my git diff before I commit and flags hardcoded secrets, API keys, or connection strings. It should never modify files — just report what it found.",
+  "assertions": [
+    "Output contains a ## Mode section specifying Inspect Only",
+    "Output contains a ## Scope section with ### Owns and ### Does Not Own subsections",
+    "Output contains a stop conditions or safety section listing file editing as prohibited",
+    "Output contains a ## Validation section",
+    "Output contains a ## Workflow section with numbered steps",
+    "Output contains a final output format section",
+    "Output does not use generic persona language like 'senior engineer' or 'expert developer'",
+    "Output includes 2 or more test prompts with expected behavior descriptions"
+  ]
+}

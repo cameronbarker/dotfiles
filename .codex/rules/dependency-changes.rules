@@ -1,6 +1,0 @@
-# Dependency Changes Rules
-
-- Explain why each dependency change is needed.
-- Prefer minimal version movement.
-- Run relevant validation after dependency edits.
-- Record follow-up risk checks when full validation is not possible.

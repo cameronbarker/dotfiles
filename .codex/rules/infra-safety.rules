@@ -1,5 +1,0 @@
-# Infrastructure Safety Rules
-
-- Require an inspect-only pass before infrastructure or environment changes.
-- Call out potential impact to networking, backups, and security-sensitive setup.
-- Avoid production-impacting actions without explicit approval.

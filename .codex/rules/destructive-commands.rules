@@ -1,5 +1,0 @@
-# Destructive Commands Rules
-
-- Treat file deletion and history rewrite commands as high risk.
-- Ask for explicit approval before destructive shell operations.
-- Prefer reversible alternatives where possible.

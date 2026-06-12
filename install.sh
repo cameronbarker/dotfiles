@@ -11,6 +11,8 @@ NVIM_APPIMAGE=true
 ATUIN_INSTALL=true
 # Tailscale VPN client only; authenticate per machine with: tailscale up
 TAILSCALE_INSTALL=true
+# vim-plug plugins via headless Neovim (needs git + network on first run).
+NVIM_PLUG_INSTALL=true
 
 for arg in "$@"; do
   case "$arg" in
@@ -20,9 +22,10 @@ for arg in "$@"; do
     --nvim-appimage) ;; # default; kept for old scripts / docs
     --no-atuin) ATUIN_INSTALL=false ;;
     --no-tailscale) TAILSCALE_INSTALL=false ;;
+    --no-plug-install) NVIM_PLUG_INSTALL=false ;;
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: $0 [--git] [--no-apt] [--no-nvim-appimage] [--no-atuin] [--no-tailscale]" >&2
+      echo "Usage: $0 [--git] [--no-apt] [--no-nvim-appimage] [--no-plug-install] [--no-atuin] [--no-tailscale]" >&2
       exit 1
       ;;
   esac
@@ -500,6 +503,52 @@ install_vim_plug() {
     https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 }
 
+resolve_nvim_bin() {
+  if command -v nvim &>/dev/null; then
+    command -v nvim
+    return 0
+  fi
+  if [[ -x /opt/nvim/usr/bin/nvim ]]; then
+    echo /opt/nvim/usr/bin/nvim
+    return 0
+  fi
+  return 1
+}
+
+install_nvim_plugins() {
+  [[ "$NVIM_PLUG_INSTALL" == true ]] || return 0
+
+  local plug_vim="${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim"
+  if [[ ! -f "${plug_vim}" ]]; then
+    return 0
+  fi
+
+  if ! command -v git &>/dev/null; then
+    echo "Skipping Neovim plugin install: git not found." >&2
+    return 0
+  fi
+
+  local nvim_bin plugged
+  nvim_bin="$(resolve_nvim_bin || true)"
+  if [[ -z "${nvim_bin}" ]]; then
+    echo "Skipping Neovim plugin install: nvim not found." >&2
+    return 0
+  fi
+
+  plugged="${HOME}/.vim/plugged"
+  if [[ -d "${plugged}" ]] && [[ -n "$(ls -A "${plugged}" 2>/dev/null)" ]]; then
+    echo "Neovim plugins already present in ${plugged}; skipping PlugInstall."
+    return 0
+  fi
+
+  echo "Installing Neovim plugins (headless: ${nvim_bin} --headless +PlugInstall +qall)..."
+  if ! "${nvim_bin}" --headless +PlugInstall +qall; then
+    echo "Neovim plugin install failed; run manually: nvim --headless +PlugInstall +qall" >&2
+    return 0
+  fi
+  echo "Neovim plugins installed."
+}
+
 mkdir -p "${HOME}/.config"
 install_starship
 ln -sf "${SCRIPT_DIR}/.screenrc" "${HOME}/.screenrc"
@@ -507,6 +556,7 @@ mkdir -p "${HOME}/.config/nvim"
 ln -sf "${SCRIPT_DIR}/.vimrc" "${HOME}/.config/nvim/init.vim"
 
 install_vim_plug
+install_nvim_plugins
 
 install_zsh_z() {
   if [[ -f "${HOME}/.zsh-z/zsh-z.plugin.zsh" ]]; then
@@ -768,8 +818,8 @@ echo "Symlinked nvim init.vim, .screenrc, Claude Code config, and Codex config f
 if [[ "$WITH_GIT" != true ]]; then
   echo "Tip: run with --git to symlink .gitconfig (skipped by default)."
 fi
-if command -v nvim &>/dev/null && [[ -f "${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim" ]]; then
-  echo "Tip: run 'nvim +PlugInstall +qall' once to install plugins (needs git + network)."
+if [[ "$NVIM_PLUG_INSTALL" != true ]] && command -v nvim &>/dev/null && [[ -f "${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim" ]]; then
+  echo "Tip: run 'nvim --headless +PlugInstall +qall' once to install plugins (needs git + network)."
 fi
 echo ""
 if command -v zsh &>/dev/null && [[ -t 0 ]]; then

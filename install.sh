@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Symlink dotfiles into ~/.config and append a one-line source hook to ~/.zshrc.
+# Symlink dotfiles into ~/.config, install zsh, create ~/.zshrc, and append a source hook.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -67,6 +67,96 @@ strip_rc_blocks() {
   else
     mv "$tmp" "$f"
     echo "Removed install markers from $f"
+  fi
+}
+
+install_zsh() {
+  if command -v zsh &>/dev/null; then
+    echo "zsh already available: $(command -v zsh)"
+    return 0
+  fi
+
+  local -a priv=()
+
+  if [[ -f /etc/debian_version ]] && command -v apt-get &>/dev/null; then
+    if [[ "$(id -u)" -eq 0 ]]; then
+      priv=()
+    elif command -v sudo &>/dev/null; then
+      priv=(sudo)
+    else
+      echo "Skipping zsh install: not root and sudo not found." >&2
+      return 0
+    fi
+    echo "Installing zsh via apt..."
+    "${priv[@]}" apt-get update -qq
+    if [[ ${#priv[@]} -eq 0 ]]; then
+      DEBIAN_FRONTEND=noninteractive apt-get install -y zsh
+    else
+      "${priv[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y zsh
+    fi
+  elif [[ "$(uname -s)" == Darwin ]] && command -v brew &>/dev/null; then
+    echo "Installing zsh via Homebrew..."
+    brew install zsh
+  elif command -v dnf &>/dev/null; then
+    if [[ "$(id -u)" -eq 0 ]]; then
+      priv=()
+    elif command -v sudo &>/dev/null; then
+      priv=(sudo)
+    else
+      echo "Skipping zsh install: not root and sudo not found." >&2
+      return 0
+    fi
+    echo "Installing zsh via dnf..."
+    "${priv[@]}" dnf install -y zsh
+  elif command -v yum &>/dev/null; then
+    if [[ "$(id -u)" -eq 0 ]]; then
+      priv=()
+    elif command -v sudo &>/dev/null; then
+      priv=(sudo)
+    else
+      echo "Skipping zsh install: not root and sudo not found." >&2
+      return 0
+    fi
+    echo "Installing zsh via yum..."
+    "${priv[@]}" yum install -y zsh
+  elif command -v apk &>/dev/null; then
+    if [[ "$(id -u)" -eq 0 ]]; then
+      priv=()
+    elif command -v sudo &>/dev/null; then
+      priv=(sudo)
+    else
+      echo "Skipping zsh install: not root and sudo not found." >&2
+      return 0
+    fi
+    echo "Installing zsh via apk..."
+    "${priv[@]}" apk add --no-cache zsh
+  else
+    echo "Could not install zsh automatically. Install zsh manually, then re-run install.sh." >&2
+    return 0
+  fi
+
+  if command -v zsh &>/dev/null; then
+    echo "Installed zsh: $(command -v zsh)"
+  else
+    echo "zsh install attempted but zsh not found in PATH." >&2
+  fi
+}
+
+ensure_zshrc() {
+  if [[ ! -f "${RC_FILE}" ]]; then
+    {
+      printf '# ~/.zshrc — pb-configs dotfiles (managed by install.sh)\n'
+    } >"${RC_FILE}"
+    echo "Created ${RC_FILE}"
+  fi
+
+  if grep -qF "$MARKER" "${RC_FILE}"; then
+    echo "Shell hook already present in ${RC_FILE}"
+  else
+    {
+      printf '\n%s\n%s\n' "$MARKER" "$SOURCE_LINE"
+    } >>"${RC_FILE}"
+    echo "Appended source hook to ${RC_FILE}"
   fi
 }
 
@@ -247,6 +337,8 @@ install_nvim_appimage() {
 }
 
 install_apt_packages
+install_zsh
+ensure_zshrc
 install_unrar
 
 install_moor() {
@@ -341,7 +433,16 @@ set_login_shell_to_zsh() {
   fi
 
   if [[ -f /etc/shells ]] && ! grep -qFx "${zsh_path}" /etc/shells; then
-    echo "Warning: ${zsh_path} is not listed in /etc/shells; chsh may fail." >&2
+    echo "Adding ${zsh_path} to /etc/shells..."
+    if [[ "$(id -u)" -eq 0 ]]; then
+      echo "${zsh_path}" >>/etc/shells
+    elif command -v sudo &>/dev/null; then
+      echo "${zsh_path}" | sudo tee -a /etc/shells >/dev/null || {
+        echo "Warning: could not add ${zsh_path} to /etc/shells; chsh may fail." >&2
+      }
+    else
+      echo "Warning: ${zsh_path} is not listed in /etc/shells; chsh may fail." >&2
+    fi
   fi
 
   if chsh -s "${zsh_path}" "$(id -un)" >/dev/null 2>&1; then
@@ -580,15 +681,6 @@ if [[ "$WITH_GIT" == true ]]; then
   ln -sf "${SCRIPT_DIR}/.gitconfig" "${HOME}/.gitconfig"
 fi
 
-if [[ -f "$RC_FILE" ]] && grep -qF "$MARKER" "$RC_FILE"; then
-  echo "Shell hook already present in ${RC_FILE}"
-else
-  {
-    printf '\n%s\n%s\n' "$MARKER" "$SOURCE_LINE"
-  } >>"$RC_FILE"
-  echo "Appended source hook to ${RC_FILE}"
-fi
-
 echo "Symlinked starship.toml, nvim init.vim, .screenrc, Claude Code config, and Codex config from ${SCRIPT_DIR}"
 if [[ "$WITH_GIT" != true ]]; then
   echo "Tip: run with --git to symlink .gitconfig (skipped by default)."
@@ -599,4 +691,13 @@ fi
 if command -v nvim &>/dev/null && [[ -f "${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim" ]]; then
   echo "Tip: run 'nvim +PlugInstall +qall' once to install plugins (needs git + network)."
 fi
-echo "Open a new login session to start in zsh (source ~/.zshrc only reloads config in current shell)."
+echo ""
+echo "=== Next step: start zsh ==="
+if command -v zsh &>/dev/null; then
+  echo "Your login shell should be zsh after a new login. To use it now without logging out:"
+  echo "  exec zsh -l"
+  echo "Or open a new SSH session / terminal tab (full login)."
+else
+  echo "zsh was not installed — fix that first, then re-run ./install.sh or add the source hook manually."
+fi
+echo "Note: source ~/.zshrc only reloads config in your current shell; it does not switch bash → zsh."

@@ -2,8 +2,8 @@
 # .terminal — shell config template (bash and zsh)
 #
 # Installation:
-#   1. From the repo: ./install.sh   (appends a source line to ~/.bashrc)
-#      Or manually: echo 'source /path/to/repo/.terminal' >> ~/.bashrc
+#   1. From the repo: ./install.sh   (installs zsh, creates ~/.zshrc, appends a source line)
+#      Or manually: echo 'source /path/to/repo/.terminal' >> ~/.zshrc
 #
 #   2. Install dependencies:
 #        Starship (prompt):   curl -sS https://starship.rs/install.sh | sh

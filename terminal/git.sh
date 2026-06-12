@@ -15,5 +15,9 @@ alias gt='git push'
 alias gst='git stash'
 alias gstp='git stash pop'
 
+# pfo/pto operate on the current branch by default (not just main)
+alias pfo='git pull origin'
+alias pto='git push origin'
+
 # git commit with staged changes
 gca() { git commit --amend --no-edit "$@"; }

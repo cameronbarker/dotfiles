@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": [
+    {
+      "name": "pre-apply-check",
+      "enabled": false,
+      "command": "[TODO: add optional pre-apply command]"
+    }
+  ]
+}

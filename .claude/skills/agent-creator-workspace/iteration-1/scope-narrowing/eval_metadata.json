@@ -1,0 +1,11 @@
+{
+  "eval_id": 2,
+  "eval_name": "scope-narrowing",
+  "prompt": "Create a full-stack engineering agent that handles all frontend and backend work — code reviews, bug fixes, deployments, database migrations, performance tuning, and whatever else is needed.",
+  "assertions": [
+    "Response does not produce a single agent .md file covering all listed domains (code review, deployments, migrations, performance)",
+    "Response proposes at least 3 distinct narrower agent alternatives",
+    "Response explains why the request is too broad to be a useful agent",
+    "Proposed alternatives each have a specific, measurable scope"
+  ]
+}

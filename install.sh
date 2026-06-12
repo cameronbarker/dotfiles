@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Symlink dotfiles into ~/.config and append a one-line source hook to ~/.zshrc.
+# Symlink dotfiles into ~/.config, install zsh, create ~/.zshrc, and append a source hook.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,6 +9,8 @@ NO_APT=false
 NVIM_APPIMAGE=true
 # Atuin shell history binary; hooks live in .terminal, not duplicated in rc.
 ATUIN_INSTALL=true
+# Tailscale VPN client only; authenticate per machine with: tailscale up
+TAILSCALE_INSTALL=true
 
 for arg in "$@"; do
   case "$arg" in
@@ -17,9 +19,10 @@ for arg in "$@"; do
     --no-nvim-appimage) NVIM_APPIMAGE=false ;;
     --nvim-appimage) ;; # default; kept for old scripts / docs
     --no-atuin) ATUIN_INSTALL=false ;;
+    --no-tailscale) TAILSCALE_INSTALL=false ;;
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: $0 [--git] [--no-apt] [--no-nvim-appimage] [--no-atuin]" >&2
+      echo "Usage: $0 [--git] [--no-apt] [--no-nvim-appimage] [--no-atuin] [--no-tailscale]" >&2
       exit 1
       ;;
   esac
@@ -30,6 +33,7 @@ SOURCE_LINE="source \"${SCRIPT_DIR}/.terminal\""
 NVIM_PATH_MARKER='# pb-configs: Neovim AppImage on PATH'
 RC_FILE="${HOME}/.zshrc"
 BASH_RC_FILE="${HOME}/.bashrc"
+LOCAL_BIN="${HOME}/.local/bin"
 
 strip_rc_blocks() {
   local f=$1
@@ -67,6 +71,103 @@ strip_rc_blocks() {
   else
     mv "$tmp" "$f"
     echo "Removed install markers from $f"
+  fi
+}
+
+install_zsh() {
+  if command -v zsh &>/dev/null; then
+    echo "zsh already available: $(command -v zsh)"
+    return 0
+  fi
+
+  local -a priv=()
+
+  if [[ -f /etc/debian_version ]] && command -v apt-get &>/dev/null; then
+    if [[ "$(id -u)" -eq 0 ]]; then
+      priv=()
+    elif command -v sudo &>/dev/null; then
+      priv=(sudo)
+    else
+      echo "Skipping zsh install: not root and sudo not found." >&2
+      return 0
+    fi
+    echo "Installing zsh via apt..."
+    "${priv[@]}" apt-get update -qq
+    if [[ ${#priv[@]} -eq 0 ]]; then
+      DEBIAN_FRONTEND=noninteractive apt-get install -y zsh
+    else
+      "${priv[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y zsh
+    fi
+  elif [[ "$(uname -s)" == Darwin ]] && command -v brew &>/dev/null; then
+    echo "Installing zsh via Homebrew..."
+    brew install zsh
+  elif command -v dnf &>/dev/null; then
+    if [[ "$(id -u)" -eq 0 ]]; then
+      priv=()
+    elif command -v sudo &>/dev/null; then
+      priv=(sudo)
+    else
+      echo "Skipping zsh install: not root and sudo not found." >&2
+      return 0
+    fi
+    echo "Installing zsh via dnf..."
+    "${priv[@]}" dnf install -y zsh
+  elif command -v yum &>/dev/null; then
+    if [[ "$(id -u)" -eq 0 ]]; then
+      priv=()
+    elif command -v sudo &>/dev/null; then
+      priv=(sudo)
+    else
+      echo "Skipping zsh install: not root and sudo not found." >&2
+      return 0
+    fi
+    echo "Installing zsh via yum..."
+    "${priv[@]}" yum install -y zsh
+  elif command -v apk &>/dev/null; then
+    if [[ "$(id -u)" -eq 0 ]]; then
+      priv=()
+    elif command -v sudo &>/dev/null; then
+      priv=(sudo)
+    else
+      echo "Skipping zsh install: not root and sudo not found." >&2
+      return 0
+    fi
+    echo "Installing zsh via apk..."
+    "${priv[@]}" apk add --no-cache zsh
+  else
+    echo "Could not install zsh automatically. Install zsh manually, then re-run install.sh." >&2
+    return 0
+  fi
+
+  if command -v zsh &>/dev/null; then
+    echo "Installed zsh: $(command -v zsh)"
+  else
+    echo "zsh install attempted but zsh not found in PATH." >&2
+  fi
+}
+
+ensure_zshrc() {
+  if [[ ! -f "${RC_FILE}" ]]; then
+    {
+      printf '# ~/.zshrc — pb-configs dotfiles (managed by install.sh)\n'
+    } >"${RC_FILE}"
+    echo "Created ${RC_FILE}"
+  fi
+
+  if grep -qF "$MARKER" "${RC_FILE}"; then
+    echo "Shell hook already present in ${RC_FILE}"
+  else
+    {
+      printf '\n%s\n%s\n' "$MARKER" "$SOURCE_LINE"
+    } >>"${RC_FILE}"
+    echo "Appended source hook to ${RC_FILE}"
+  fi
+}
+
+ensure_local_bin() {
+  if [[ ! -d "${LOCAL_BIN}" ]]; then
+    mkdir -p "${LOCAL_BIN}"
+    echo "Created ${LOCAL_BIN}"
   fi
 }
 
@@ -247,6 +348,9 @@ install_nvim_appimage() {
 }
 
 install_apt_packages
+install_zsh
+ensure_zshrc
+ensure_local_bin
 install_unrar
 
 install_moor() {
@@ -341,7 +445,16 @@ set_login_shell_to_zsh() {
   fi
 
   if [[ -f /etc/shells ]] && ! grep -qFx "${zsh_path}" /etc/shells; then
-    echo "Warning: ${zsh_path} is not listed in /etc/shells; chsh may fail." >&2
+    echo "Adding ${zsh_path} to /etc/shells..."
+    if [[ "$(id -u)" -eq 0 ]]; then
+      echo "${zsh_path}" >>/etc/shells
+    elif command -v sudo &>/dev/null; then
+      echo "${zsh_path}" | sudo tee -a /etc/shells >/dev/null || {
+        echo "Warning: could not add ${zsh_path} to /etc/shells; chsh may fail." >&2
+      }
+    else
+      echo "Warning: ${zsh_path} is not listed in /etc/shells; chsh may fail." >&2
+    fi
   fi
 
   if chsh -s "${zsh_path}" "$(id -un)" >/dev/null 2>&1; then
@@ -353,22 +466,24 @@ set_login_shell_to_zsh() {
 }
 
 install_starship() {
-  if command -v starship &>/dev/null; then
-    return 0
-  fi
-  if ! command -v curl &>/dev/null; then
-    echo "Skipping Starship install: curl not found." >&2
-    return 0
-  fi
-  echo "Installing Starship to ${HOME}/.local/bin"
-  mkdir -p "${HOME}/.local/bin"
-  if ! curl -sS https://starship.rs/install.sh | sh -s -- -y -b "${HOME}/.local/bin"; then
-    echo "Starship install failed." >&2
-    return 0
-  fi
-}
+  ensure_local_bin
 
-install_starship
+  if command -v starship &>/dev/null; then
+    echo "Starship already available: $(command -v starship)"
+  elif ! command -v curl &>/dev/null; then
+    echo "Skipping Starship install: curl not found." >&2
+  else
+    echo "Installing Starship to ${LOCAL_BIN}"
+    if curl -sS https://starship.rs/install.sh | sh -s -- -y -b "${LOCAL_BIN}"; then
+      echo "Installed Starship: ${LOCAL_BIN}/starship"
+    else
+      echo "Starship install failed." >&2
+    fi
+  fi
+
+  ln -sf "${SCRIPT_DIR}/starship.toml" "${HOME}/.config/starship.toml"
+  echo "Symlinked starship.toml to ${HOME}/.config/starship.toml"
+}
 
 install_vim_plug() {
   local dest="${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim"
@@ -386,7 +501,7 @@ install_vim_plug() {
 }
 
 mkdir -p "${HOME}/.config"
-ln -sf "${SCRIPT_DIR}/starship.toml" "${HOME}/.config/starship.toml"
+install_starship
 ln -sf "${SCRIPT_DIR}/.screenrc" "${HOME}/.screenrc"
 mkdir -p "${HOME}/.config/nvim"
 ln -sf "${SCRIPT_DIR}/.vimrc" "${HOME}/.config/nvim/init.vim"
@@ -427,10 +542,80 @@ install_atuin() {
   fi
 }
 
+install_tailscale() {
+  [[ "$TAILSCALE_INSTALL" == true ]] || return 0
+  if command -v tailscale &>/dev/null; then
+    echo "Tailscale already available: $(command -v tailscale)"
+    return 0
+  fi
+
+  if [[ "$(uname -s)" == Darwin ]] && command -v brew &>/dev/null; then
+    echo "Installing Tailscale via Homebrew (authenticate per machine: tailscale up)"
+    if ! brew install tailscale; then
+      echo "Tailscale install failed." >&2
+      return 0
+    fi
+    if command -v tailscale &>/dev/null; then
+      echo "Tailscale installed: $(command -v tailscale) — run: tailscale up"
+    else
+      echo "Tailscale install finished but tailscale not in PATH." >&2
+    fi
+    return 0
+  fi
+
+  if [[ "$(uname -s)" != Linux ]]; then
+    echo "Skipping Tailscale: unsupported platform (install manually)." >&2
+    return 0
+  fi
+
+  if ! command -v curl &>/dev/null; then
+    echo "Skipping Tailscale: curl not found." >&2
+    return 0
+  fi
+
+  # Run the official installer as root (not curl | sh) so sudo can prompt if needed.
+  local -a priv=()
+  if [[ "$(id -u)" -eq 0 ]]; then
+    priv=()
+  elif command -v sudo &>/dev/null; then
+    priv=(sudo)
+  else
+    echo "Skipping Tailscale: not root and sudo not found." >&2
+    return 0
+  fi
+
+  local installer
+  installer="$(mktemp)"
+  trap "rm -f '${installer}'" RETURN
+
+  echo "Installing Tailscale via tailscale.com/install.sh (authenticate per machine: tailscale up)"
+  if ! curl --proto '=https' --tlsv1.2 -fsSL -o "${installer}" https://tailscale.com/install.sh; then
+    echo "Tailscale: failed to download installer." >&2
+    return 0
+  fi
+
+  if ! "${priv[@]}" sh "${installer}"; then
+    echo "Tailscale installer failed (check sudo, network, and /etc/os-release)." >&2
+    return 0
+  fi
+
+  if command -v tailscale &>/dev/null; then
+    echo "Tailscale installed: $(command -v tailscale)"
+    if [[ ${#priv[@]} -eq 0 ]]; then
+      echo "Authenticate: tailscale up"
+    else
+      echo "Authenticate: sudo tailscale up"
+    fi
+  else
+    echo "Tailscale installer finished but 'tailscale' not in PATH; try: sudo tailscale version" >&2
+  fi
+}
+
 strip_rc_blocks "${BASH_RC_FILE}"
 set_login_shell_to_zsh
 install_zsh_z
 install_atuin
+install_tailscale
 
 install_claude_config() {
   local claude_src="${SCRIPT_DIR}/.claude"
@@ -494,7 +679,64 @@ install_codex_config() {
   echo "Symlinked Codex AGENTS.md from ${codex_src} to ${codex_dest}"
 }
 
+install_codex_skills() {
+  local codex_skills_src_dir="${SCRIPT_DIR}/.codex/skills"
+  local codex_skills_dest_dir="${HOME}/.codex/skills"
+
+  [[ -d "${codex_skills_src_dir}" ]] || return 0
+
+  mkdir -p "${codex_skills_dest_dir}"
+
+  local src
+  for src in "${codex_skills_src_dir}"/*; do
+    [[ -e "${src}" ]] || continue
+    [[ -d "${src}" ]] || continue
+    [[ -f "${src}/SKILL.md" ]] || continue
+
+    local name dest
+    name="$(basename "${src}")"
+    dest="${codex_skills_dest_dir}/${name}"
+
+    if [[ -L "${dest}" ]]; then
+      echo "Skip ${dest}: symlink already exists."
+    elif [[ -e "${dest}" ]]; then
+      echo "Skip ${dest}: path exists and is not a symlink."
+    else
+      ln -sf "${src}" "${dest}"
+    fi
+  done
+
+  echo "Symlinked Codex skills from ${codex_skills_src_dir} to ${codex_skills_dest_dir}"
+}
+
 install_codex_config
+
+install_codex_skills
+
+install_ai_kit_bins() {
+  local kit_bin_dir="${SCRIPT_DIR}/ai-kit/bin"
+
+  [[ -d "${kit_bin_dir}" ]] || return 0
+  ensure_local_bin
+
+  local commands=(ai-context ai-risk ai-failure ai-codex-prompt)
+  for cmd in "${commands[@]}"; do
+    local src="${kit_bin_dir}/${cmd}"
+    local dest="${LOCAL_BIN}/${cmd}"
+
+    [[ -x "${src}" ]] || continue
+
+    if [[ -L "${dest}" ]]; then
+      ln -sf "${src}" "${dest}"
+    elif [[ -e "${dest}" ]]; then
+      echo "Skip ${dest}: exists and is not a symlink." >&2
+    else
+      ln -sf "${src}" "${dest}"
+    fi
+  done
+}
+
+install_ai_kit_bins
 
 install_tmux_config() {
   local tmux_src="${SCRIPT_DIR}/.tmux.conf"
@@ -522,23 +764,22 @@ if [[ "$WITH_GIT" == true ]]; then
   ln -sf "${SCRIPT_DIR}/.gitconfig" "${HOME}/.gitconfig"
 fi
 
-if [[ -f "$RC_FILE" ]] && grep -qF "$MARKER" "$RC_FILE"; then
-  echo "Shell hook already present in ${RC_FILE}"
-else
-  {
-    printf '\n%s\n%s\n' "$MARKER" "$SOURCE_LINE"
-  } >>"$RC_FILE"
-  echo "Appended source hook to ${RC_FILE}"
-fi
-
-echo "Symlinked starship.toml, nvim init.vim, .screenrc, Claude Code config, and Codex config from ${SCRIPT_DIR}"
+echo "Symlinked nvim init.vim, .screenrc, Claude Code config, and Codex config from ${SCRIPT_DIR}"
 if [[ "$WITH_GIT" != true ]]; then
   echo "Tip: run with --git to symlink .gitconfig (skipped by default)."
-fi
-if [[ "$NO_APT" != true ]] && [[ -f /etc/debian_version ]]; then
-  echo "Tip: install Starship with its curl script — see README."
 fi
 if command -v nvim &>/dev/null && [[ -f "${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim" ]]; then
   echo "Tip: run 'nvim +PlugInstall +qall' once to install plugins (needs git + network)."
 fi
-echo "Open a new login session to start in zsh (source ~/.zshrc only reloads config in current shell)."
+echo ""
+if command -v zsh &>/dev/null && [[ -t 0 ]]; then
+  echo "=== Starting zsh ==="
+  exec zsh -l
+elif command -v zsh &>/dev/null; then
+  echo "=== Next step: start zsh ==="
+  echo "Run: exec zsh -l"
+  echo "Or open a new SSH session / terminal tab (full login)."
+else
+  echo "=== Next step: install zsh ==="
+  echo "zsh was not installed — fix that first, then re-run ./install.sh."
+fi

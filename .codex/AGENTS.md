@@ -85,6 +85,14 @@ For cross-cutting or structural changes, Codex may recommend branch names, commi
 
 Before any destructive or history-rewriting git operation, Codex must stop and ask for confirmation.
 
+## Secrets and credentials
+
+- Never print secrets, tokens, keys, or credential file contents in responses or command output.
+- Use placeholders in examples (for example `REDACTED`, `***`).
+- Do not run commands that dump `.env`, credential JSON, private keys, keychains, or full environment listings unless I explicitly authorize it.
+- Exec policy for high-risk secret commands lives in `~/.codex/rules/secrets-safety.rules` (installed from this repo via `./install.sh`).
+- Before staging or committing, check for `.env`, `credentials.*`, and `*secret*` paths; do not commit them.
+
 ## Language Preferences
 
 When writing one-off scripts, automation, or local tooling:
@@ -95,3 +103,45 @@ When writing one-off scripts, automation, or local tooling:
 - In an existing project, always default to the project's primary language, framework, and conventions.
 - Do not introduce a new language/runtime into a project without a clear reason.
 - If multiple languages are viable, choose the one with the smallest dependency footprint.
+
+## Repo Tools First (AI Kit)
+
+If `.codex/project.yml` exists, treat the repository as AI-kit bootstrapped and prefer deterministic repo tools before broad manual exploration when they are available on `PATH`.
+
+At session or task start:
+- Check for `.codex/project.yml`.
+- Check command availability:
+  - `command -v ai-risk`
+  - `command -v ai-context`
+  - `command -v ai-failure`
+  - `command -v ai-codex-prompt`
+- If `ai-context/` exists, read relevant generated files only for orientation.
+- Do not generate or overwrite context automatically.
+
+Tool-use policy:
+- Use the smallest relevant tool for the task.
+- Do not run all AI-kit commands for every prompt.
+- If a tool is unavailable, continue with normal workflow and report AI kit was unavailable.
+
+Inspect mode:
+- When target paths are known, run `ai-risk --json <paths>`.
+- Use existing `ai-context/` docs when present.
+- Avoid broad repo exploration unless requested or needed.
+
+Debug mode:
+- For failing commands, prefer `ai-failure -- <command>`.
+- Use the failure summary before deeper manual inspection.
+
+Edit mode:
+- Before editing known target files, run `ai-risk --json <paths>`.
+- If risk is critical/blocking, stop and ask for explicit approval.
+- If risk is high, inspect first and state risk before editing.
+- Run narrow validation after changes.
+
+Review mode:
+- Run `ai-risk --json` on changed files when possible.
+- Use risk output to structure severity and recommendations.
+
+Context generation:
+- Only run `ai-context --force` when explicitly requested by the user or when an edit prompt explicitly allows generated artifacts.
+- Generated context is orientation-only; source files are authoritative.

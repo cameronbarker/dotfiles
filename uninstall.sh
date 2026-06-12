@@ -89,9 +89,41 @@ remove_symlink_if_ours "${HOME}/.screenrc" "${SCRIPT_DIR}/.screenrc"
 remove_symlink_if_ours "${HOME}/.tmux.conf" "${SCRIPT_DIR}/.tmux.conf"
 remove_symlink_if_ours "${HOME}/.codex/AGENTS.md" "${SCRIPT_DIR}/.codex/AGENTS.md"
 
+remove_codex_skills_symlinks_if_ours() {
+  local codex_skills_src_dir="${SCRIPT_DIR}/.codex/skills"
+  local codex_skills_dest_dir="${HOME}/.codex/skills"
+
+  [[ -d "${codex_skills_src_dir}" ]] || return 0
+  [[ -d "${codex_skills_dest_dir}" ]] || return 0
+
+  local src name dest
+  for src in "${codex_skills_src_dir}"/*; do
+    [[ -e "${src}" ]] || continue
+    [[ -d "${src}" ]] || continue
+    [[ -f "${src}/SKILL.md" ]] || continue
+    name="$(basename "${src}")"
+    dest="${codex_skills_dest_dir}/${name}"
+    remove_symlink_if_ours "${dest}" "${src}"
+  done
+}
+
+remove_codex_skills_symlinks_if_ours
+
 if [[ "$WITH_GIT" == true ]]; then
   remove_symlink_if_ours "${HOME}/.gitconfig" "${SCRIPT_DIR}/.gitconfig"
 fi
+
+remove_ai_kit_bins() {
+  local bin_dir="${HOME}/.local/bin"
+  local kit_bin_dir="${SCRIPT_DIR}/ai-kit/bin"
+  local commands=(ai-context ai-risk ai-failure ai-codex-prompt)
+
+  for cmd in "${commands[@]}"; do
+    remove_symlink_if_ours "${bin_dir}/${cmd}" "${kit_bin_dir}/${cmd}"
+  done
+}
+
+remove_ai_kit_bins
 
 strip_rc_blocks "${HOME}/.bashrc"
 strip_rc_blocks "${HOME}/.zshrc"

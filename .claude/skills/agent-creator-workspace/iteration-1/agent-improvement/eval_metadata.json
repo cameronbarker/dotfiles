@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "agent-improvement",
+  "prompt": "Here's my agent file — it keeps touching files it shouldn't and doesn't know when to stop. Can you improve it?\n\n---\n\n# Agent: Project Automation Agent\n\n## Purpose\nI am a senior software engineer agent. I help with project tasks.\n\n## When to Use\nUse me when you need help with the project.\n\n## Workflow\n1. Look at the project\n2. Figure out what needs to be done\n3. Make the changes\n4. Report back\n\n## Output\nTell the user what happened.",
+  "assertions": [
+    "Improved output contains a ## Stop Conditions or ## Safety section that was absent in the original",
+    "Improved output contains ### Does Not Own section clarifying what the agent should not touch",
+    "The original purpose (project task automation) is preserved — not replaced with a completely different agent",
+    "Stop conditions are generalized rules (e.g. 'do not modify database schemas') rather than specific file-name prohibitions",
+    "Improved output contains a ## Validation section with a concrete command or check",
+    "The mission statement is more specific than 'help with the project'"
+  ]
+}

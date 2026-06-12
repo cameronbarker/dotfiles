@@ -1,0 +1,121 @@
+{
+  "expectations": [
+    {
+      "text": "Output contains a ## Mode section specifying Inspect Only",
+      "passed": false,
+      "evidence": "No '## Mode' section exists in agent.md. The read-only intent is expressed in '## Constraints' (\"Read-only. No file writes, no git state changes.\") and inline in '## Behavior', but never as a dedicated Mode section."
+    },
+    {
+      "text": "Output contains a ## Scope section with ### Owns and ### Does Not Own subsections",
+      "passed": false,
+      "evidence": "No '## Scope' section exists in agent.md. The agent has sections: Purpose, Trigger, Behavior, What to Scan For, False Positive Guidance, Output Format, and Constraints — none named Scope."
+    },
+    {
+      "text": "Output contains a stop conditions or safety section listing file editing as prohibited",
+      "passed": true,
+      "evidence": "'## Constraints' section explicitly states: \"Read-only. No file writes, no git state changes.\" '## Behavior' also lists: \"Never modify, stage, unstage, or delete any file. Never run `git add`, `git commit`, `git stash`, `git reset`, or any state-changing git command.\""
+    },
+    {
+      "text": "Output contains a ## Validation section",
+      "passed": false,
+      "evidence": "No '## Validation' section exists in agent.md. The seven sections are: Purpose, Trigger, Behavior, What to Scan For, False Positive Guidance, Output Format, and Constraints."
+    },
+    {
+      "text": "Output contains a ## Workflow section with numbered steps",
+      "passed": false,
+      "evidence": "No '## Workflow' section exists. '## Behavior' contains bullet points (not numbered steps): run git diff, read line by line, report findings, etc. There is no numbered step-by-step workflow."
+    },
+    {
+      "text": "Output contains a final output format section",
+      "passed": true,
+      "evidence": "'## Output Format' section exists with two subsections: '### When secrets are found' (showing a structured report with FILE, Line, severity, and totals) and '### When nothing is found' (showing the clean scan message with line/file counts and a pattern-matching disclaimer)."
+    },
+    {
+      "text": "Output does not use generic persona language like 'senior engineer' or 'expert developer'",
+      "passed": true,
+      "evidence": "agent.md contains no persona language. No references to 'senior engineer', 'expert developer', or similar role-based framing anywhere in the document."
+    },
+    {
+      "text": "Output includes 2 or more test prompts with expected behavior descriptions",
+      "passed": false,
+      "evidence": "No test prompts section exists in agent.md or transcript.md. The transcript discusses design decisions but includes no example prompts with expected behavior descriptions."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 5,
+    "total": 8,
+    "pass_rate": 0.375
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "total_steps": 0,
+    "errors_encountered": 0,
+    "output_chars": 3947,
+    "transcript_chars": 2048
+  },
+  "timing": {
+    "executor_duration_seconds": 76.4,
+    "total_duration_seconds": 76.4
+  },
+  "claims": [
+    {
+      "claim": "Constraints section explicitly prevents file modifications and git state changes",
+      "type": "factual",
+      "verified": true,
+      "evidence": "'## Constraints' states: \"Read-only. No file writes, no git state changes.\" '## Behavior' reinforces with explicit forbidden commands."
+    },
+    {
+      "claim": "Output format has two clearly differentiated states — findings present vs. clean scan",
+      "type": "factual",
+      "verified": true,
+      "evidence": "'## Output Format' has '### When secrets are found' and '### When nothing is found' with distinct templates for each."
+    },
+    {
+      "claim": "Agent covers false positive guidance to reduce noise",
+      "type": "factual",
+      "verified": true,
+      "evidence": "'## False Positive Guidance' section lists env var references, placeholder strings, and test fixture paths as exclusions or low-severity downgrades."
+    },
+    {
+      "claim": "Agent includes a Mode section specifying Inspect Only",
+      "type": "factual",
+      "verified": false,
+      "evidence": "No '## Mode' section found in agent.md."
+    },
+    {
+      "claim": "Agent includes a Scope section with Owns/Does Not Own subsections",
+      "type": "factual",
+      "verified": false,
+      "evidence": "No '## Scope' section found in agent.md."
+    },
+    {
+      "claim": "Agent includes a Validation section",
+      "type": "factual",
+      "verified": false,
+      "evidence": "No '## Validation' section found in agent.md."
+    },
+    {
+      "claim": "Agent includes test prompts with expected behavior",
+      "type": "factual",
+      "verified": false,
+      "evidence": "No test prompts found in agent.md or transcript.md."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [
+      "The 'stop conditions' expectation was satisfied by '## Constraints' even though it isn't labeled as a 'stop conditions' or 'safety' section — graded PASS based on equivalent content."
+    ],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      "The agent produced a functionally sound read-only scanner but missed 5 of 8 structural expectations. The skill prompt should explicitly require: a ## Mode section, a ## Scope section with Owns/Does Not Own subsections, a ## Validation section, numbered steps in a ## Workflow section, and at least 2 test prompts with expected behavior descriptions.",
+      "The agent's content quality is high (false positive guidance, severity levels, precise forbidden command lists), suggesting the model understands the domain — it just wasn't prompted to produce the required structural sections.",
+      "Test prompts are a complete miss — the agent produced no eval examples at all. The skill should emphasize that test prompts are a required output component, not optional."
+    ],
+    "overall": "The without-skill run produced a well-reasoned, content-rich agent but achieved only 37.5% pass rate due to missing required structural sections. Core safety constraints and output format were handled correctly. The failures are structural/template gaps, not reasoning failures."
+  }
+}

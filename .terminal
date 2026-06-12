@@ -2,13 +2,15 @@
 # .terminal — shell config template (bash and zsh)
 #
 # Installation:
-#   1. From the repo: ./install.sh   (appends a source line to ~/.bashrc)
-#      Or manually: echo 'source /path/to/repo/.terminal' >> ~/.bashrc
+#   1. From the repo: ./install.sh   (installs zsh, creates ~/.zshrc, appends a source line)
+#      Or manually: echo 'source /path/to/repo/.terminal' >> ~/.zshrc
 #
 #   2. Install dependencies:
 #        Starship (prompt):   curl -sS https://starship.rs/install.sh | sh
 #        Atuin (history):     default via ./install.sh (binary only; do not use setup.atuin.sh — it duplicates hooks)
 #                             or: brew install atuin
+#        Tailscale (VPN):     default via ./install.sh (client only; run tailscale up per machine — no auth keys in repo)
+#                             or: brew install tailscale  /  curl -fsSL https://tailscale.com/install.sh | sh
 #        fzf (fuzzy finder):  git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install
 #        zoxide (dirs):       apt install zoxide  (default via ./install.sh) — or brew install zoxide
 #        zsh-z (zsh dirs):    git clone --depth 1 https://github.com/agkozak/zsh-z ~/.zsh-z

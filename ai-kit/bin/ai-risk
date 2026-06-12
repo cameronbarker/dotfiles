@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+while [[ -L "${SCRIPT_PATH}" ]]; do
+  SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
+  LINK_TARGET="$(readlink "${SCRIPT_PATH}")"
+  if [[ "${LINK_TARGET}" == /* ]]; then
+    SCRIPT_PATH="${LINK_TARGET}"
+  else
+    SCRIPT_PATH="${SCRIPT_DIR}/${LINK_TARGET}"
+  fi
+done
+BIN_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
+# shellcheck source=ai-kit/lib/common.sh
+source "${BIN_DIR}/../lib/common.sh"
+# shellcheck source=ai-kit/lib/risk.sh
+source "${BIN_DIR}/../lib/risk.sh"
+
+usage() {
+  cat <<'USAGE'
+Usage: ai-risk [--json] [path ...]
+
+Evaluate risk for paths using .codex/risk-paths.yml.
+If no paths are provided, uses git changed files (staged + unstaged).
+USAGE
+}
+
+json=0
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  usage
+  exit 0
+fi
+if [[ "${1:-}" == "--json" ]]; then
+  json=1
+  shift
+fi
+
+root="$(ai_kit_repo_root)"
+config="$(ai_risk_config_file "$root")"
+
+declare -a AI_RISK_RULE_PATH=()
+declare -a AI_RISK_RULE_LEVEL=()
+declare -a AI_RISK_RULE_ACTION=()
+declare -a AI_RISK_RULE_REASON=()
+ai_risk_load_config "$config"
+
+declare -a paths=()
+if [[ "$#" -gt 0 ]]; then
+  for p in "$@"; do
+    p="${p#${root}/}"
+    paths+=("$p")
+  done
+else
+  if command -v git >/dev/null 2>&1; then
+    while IFS= read -r p; do
+      [[ -n "$p" ]] && paths+=("$p")
+    done < <(
+      {
+        git -C "$root" diff --name-only 2>/dev/null || true
+        git -C "$root" diff --cached --name-only 2>/dev/null || true
+      } | ai_kit_unique_lines
+    )
+  fi
+fi
+
+if [[ ${#paths[@]} -eq 0 ]]; then
+  if [[ "$json" -eq 1 ]]; then
+    printf '{"repo_root":"%s","config":"%s","paths":[],"summary":{"counts":{"low":0,"medium":0,"high":0,"critical":0},"blocking":false}}\n' \
+      "$(ai_kit_json_escape "$root")" "$(ai_kit_json_escape "$config")"
+  else
+    echo "No paths to evaluate."
+  fi
+  exit 0
+fi
+
+low=0; medium=0; high=0; critical=0; blocking=0
+json_items=""
+
+for p in "${paths[@]}"; do
+  row="$(ai_risk_eval_path "$p")"
+  path="${row%%$'\t'*}"; rest="${row#*$'\t'}"
+  level="${rest%%$'\t'*}"; rest="${rest#*$'\t'}"
+  action="${rest%%$'\t'*}"; rest="${rest#*$'\t'}"
+  matched="${rest%%$'\t'*}"; reason="${rest#*$'\t'}"
+
+  case "$level" in
+    low) low=$((low + 1)) ;;
+    medium) medium=$((medium + 1)) ;;
+    high) high=$((high + 1)) ;;
+    critical) critical=$((critical + 1)) ;;
+  esac
+
+  if [[ "$level" == "critical" ]] || ai_risk_is_blocking_action "$action"; then
+    blocking=1
+  fi
+
+  if [[ "$json" -eq 0 ]]; then
+    printf '%-40s level=%-8s action=%-30s reason=%s\n' "$path" "$level" "$action" "$reason"
+  else
+    comma=""
+    [[ -n "$json_items" ]] && comma=","
+    json_items+="$comma{\"path\":\"$(ai_kit_json_escape "$path")\",\"level\":\"$(ai_kit_json_escape "$level")\",\"action\":\"$(ai_kit_json_escape "$action")\",\"matched\":$([[ "$matched" == "1" ]] && echo true || echo false),\"reason\":\"$(ai_kit_json_escape "$reason")\"}"
+  fi
+done
+
+if [[ "$json" -eq 0 ]]; then
+  echo "---"
+  echo "Summary: low=${low} medium=${medium} high=${high} critical=${critical} blocking=$([[ "$blocking" -eq 1 ]] && echo true || echo false)"
+else
+  printf '{"repo_root":"%s","config":"%s","paths":[%s],"summary":{"counts":{"low":%d,"medium":%d,"high":%d,"critical":%d},"blocking":%s}}\n' \
+    "$(ai_kit_json_escape "$root")" \
+    "$(ai_kit_json_escape "$config")" \
+    "$json_items" \
+    "$low" "$medium" "$high" "$critical" \
+    "$([[ "$blocking" -eq 1 ]] && echo true || echo false)"
+fi
+
+if [[ "$blocking" -eq 1 ]]; then
+  exit 2
+fi
+exit 0

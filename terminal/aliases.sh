@@ -1,9 +1,9 @@
 # -----------------------------------------------------------------------------
 # File listing
 # -----------------------------------------------------------------------------
-alias ll='ls -la --color=auto'
+alias ll='ls -CF --color=auto'
 alias la='ls -A --color=auto'
-alias l='ls -CF --color=auto'
+alias l='ls -la --color=auto'
 alias lt='ls -lAht --color=auto'  # sort by modified time
 
 # -----------------------------------------------------------------------------

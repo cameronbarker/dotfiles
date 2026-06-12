@@ -132,6 +132,26 @@ nnoremap <C-Down>  :resize -2<CR>
 nnoremap <C-Left>  :vertical resize -2<CR>
 nnoremap <C-Right> :vertical resize +2<CR>
 
+" macOS-style navigation (Option/Cmd + arrow; inert if terminal does not send keys)
+nnoremap <M-Left>  b
+nnoremap <M-Right> w
+nnoremap <M-b>     b
+nnoremap <M-f>     w
+inoremap <M-Left>  <C-o>b
+inoremap <M-Right> <C-o>w
+inoremap <M-b>     <C-o>b
+inoremap <M-f>     <C-o>w
+vnoremap <M-Left>  b
+vnoremap <M-Right> w
+vnoremap <M-b>     b
+vnoremap <M-f>     w
+nnoremap <D-Left>  0
+nnoremap <D-Right> $
+inoremap <D-Left>  <C-o>0
+inoremap <D-Right> <C-o>$
+vnoremap <D-Left>  0
+vnoremap <D-Right> $
+
 " Buffer navigation
 nnoremap <leader>bn :bnext<CR>
 nnoremap <leader>bp :bprevious<CR>

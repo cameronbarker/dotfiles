@@ -553,6 +553,12 @@ install_tailscale() {
     echo "Installing Tailscale via Homebrew (authenticate per machine: tailscale up)"
     if ! brew install tailscale; then
       echo "Tailscale install failed." >&2
+      return 0
+    fi
+    if command -v tailscale &>/dev/null; then
+      echo "Tailscale installed: $(command -v tailscale) — run: tailscale up"
+    else
+      echo "Tailscale install finished but tailscale not in PATH." >&2
     fi
     return 0
   fi
@@ -567,14 +573,41 @@ install_tailscale() {
     return 0
   fi
 
+  # Run the official installer as root (not curl | sh) so sudo can prompt if needed.
+  local -a priv=()
+  if [[ "$(id -u)" -eq 0 ]]; then
+    priv=()
+  elif command -v sudo &>/dev/null; then
+    priv=(sudo)
+  else
+    echo "Skipping Tailscale: not root and sudo not found." >&2
+    return 0
+  fi
+
+  local installer
+  installer="$(mktemp)"
+  trap "rm -f '${installer}'" RETURN
+
   echo "Installing Tailscale via tailscale.com/install.sh (authenticate per machine: tailscale up)"
-  if ! curl --proto '=https' --tlsv1.2 -fsSL https://tailscale.com/install.sh | sh; then
-    echo "Tailscale installer failed." >&2
+  if ! curl --proto '=https' --tlsv1.2 -fsSL -o "${installer}" https://tailscale.com/install.sh; then
+    echo "Tailscale: failed to download installer." >&2
+    return 0
+  fi
+
+  if ! "${priv[@]}" sh "${installer}"; then
+    echo "Tailscale installer failed (check sudo, network, and /etc/os-release)." >&2
     return 0
   fi
 
   if command -v tailscale &>/dev/null; then
     echo "Tailscale installed: $(command -v tailscale)"
+    if [[ ${#priv[@]} -eq 0 ]]; then
+      echo "Authenticate: tailscale up"
+    else
+      echo "Authenticate: sudo tailscale up"
+    fi
+  else
+    echo "Tailscale installer finished but 'tailscale' not in PATH; try: sudo tailscale version" >&2
   fi
 }
 

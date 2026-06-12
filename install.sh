@@ -9,6 +9,8 @@ NO_APT=false
 NVIM_APPIMAGE=true
 # Atuin shell history binary; hooks live in .terminal, not duplicated in rc.
 ATUIN_INSTALL=true
+# Tailscale VPN client only; authenticate per machine with: tailscale up
+TAILSCALE_INSTALL=true
 
 for arg in "$@"; do
   case "$arg" in
@@ -17,9 +19,10 @@ for arg in "$@"; do
     --no-nvim-appimage) NVIM_APPIMAGE=false ;;
     --nvim-appimage) ;; # default; kept for old scripts / docs
     --no-atuin) ATUIN_INSTALL=false ;;
+    --no-tailscale) TAILSCALE_INSTALL=false ;;
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: $0 [--git] [--no-apt] [--no-nvim-appimage] [--no-atuin]" >&2
+      echo "Usage: $0 [--git] [--no-apt] [--no-nvim-appimage] [--no-atuin] [--no-tailscale]" >&2
       exit 1
       ;;
   esac
@@ -30,6 +33,7 @@ SOURCE_LINE="source \"${SCRIPT_DIR}/.terminal\""
 NVIM_PATH_MARKER='# pb-configs: Neovim AppImage on PATH'
 RC_FILE="${HOME}/.zshrc"
 BASH_RC_FILE="${HOME}/.bashrc"
+LOCAL_BIN="${HOME}/.local/bin"
 
 strip_rc_blocks() {
   local f=$1
@@ -157,6 +161,13 @@ ensure_zshrc() {
       printf '\n%s\n%s\n' "$MARKER" "$SOURCE_LINE"
     } >>"${RC_FILE}"
     echo "Appended source hook to ${RC_FILE}"
+  fi
+}
+
+ensure_local_bin() {
+  if [[ ! -d "${LOCAL_BIN}" ]]; then
+    mkdir -p "${LOCAL_BIN}"
+    echo "Created ${LOCAL_BIN}"
   fi
 }
 
@@ -339,6 +350,7 @@ install_nvim_appimage() {
 install_apt_packages
 install_zsh
 ensure_zshrc
+ensure_local_bin
 install_unrar
 
 install_moor() {
@@ -454,22 +466,24 @@ set_login_shell_to_zsh() {
 }
 
 install_starship() {
-  if command -v starship &>/dev/null; then
-    return 0
-  fi
-  if ! command -v curl &>/dev/null; then
-    echo "Skipping Starship install: curl not found." >&2
-    return 0
-  fi
-  echo "Installing Starship to ${HOME}/.local/bin"
-  mkdir -p "${HOME}/.local/bin"
-  if ! curl -sS https://starship.rs/install.sh | sh -s -- -y -b "${HOME}/.local/bin"; then
-    echo "Starship install failed." >&2
-    return 0
-  fi
-}
+  ensure_local_bin
 
-install_starship
+  if command -v starship &>/dev/null; then
+    echo "Starship already available: $(command -v starship)"
+  elif ! command -v curl &>/dev/null; then
+    echo "Skipping Starship install: curl not found." >&2
+  else
+    echo "Installing Starship to ${LOCAL_BIN}"
+    if curl -sS https://starship.rs/install.sh | sh -s -- -y -b "${LOCAL_BIN}"; then
+      echo "Installed Starship: ${LOCAL_BIN}/starship"
+    else
+      echo "Starship install failed." >&2
+    fi
+  fi
+
+  ln -sf "${SCRIPT_DIR}/starship.toml" "${HOME}/.config/starship.toml"
+  echo "Symlinked starship.toml to ${HOME}/.config/starship.toml"
+}
 
 install_vim_plug() {
   local dest="${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim"
@@ -487,7 +501,7 @@ install_vim_plug() {
 }
 
 mkdir -p "${HOME}/.config"
-ln -sf "${SCRIPT_DIR}/starship.toml" "${HOME}/.config/starship.toml"
+install_starship
 ln -sf "${SCRIPT_DIR}/.screenrc" "${HOME}/.screenrc"
 mkdir -p "${HOME}/.config/nvim"
 ln -sf "${SCRIPT_DIR}/.vimrc" "${HOME}/.config/nvim/init.vim"
@@ -528,10 +542,47 @@ install_atuin() {
   fi
 }
 
+install_tailscale() {
+  [[ "$TAILSCALE_INSTALL" == true ]] || return 0
+  if command -v tailscale &>/dev/null; then
+    echo "Tailscale already available: $(command -v tailscale)"
+    return 0
+  fi
+
+  if [[ "$(uname -s)" == Darwin ]] && command -v brew &>/dev/null; then
+    echo "Installing Tailscale via Homebrew (authenticate per machine: tailscale up)"
+    if ! brew install tailscale; then
+      echo "Tailscale install failed." >&2
+    fi
+    return 0
+  fi
+
+  if [[ "$(uname -s)" != Linux ]]; then
+    echo "Skipping Tailscale: unsupported platform (install manually)." >&2
+    return 0
+  fi
+
+  if ! command -v curl &>/dev/null; then
+    echo "Skipping Tailscale: curl not found." >&2
+    return 0
+  fi
+
+  echo "Installing Tailscale via tailscale.com/install.sh (authenticate per machine: tailscale up)"
+  if ! curl --proto '=https' --tlsv1.2 -fsSL https://tailscale.com/install.sh | sh; then
+    echo "Tailscale installer failed." >&2
+    return 0
+  fi
+
+  if command -v tailscale &>/dev/null; then
+    echo "Tailscale installed: $(command -v tailscale)"
+  fi
+}
+
 strip_rc_blocks "${BASH_RC_FILE}"
 set_login_shell_to_zsh
 install_zsh_z
 install_atuin
+install_tailscale
 
 install_claude_config() {
   local claude_src="${SCRIPT_DIR}/.claude"
@@ -630,16 +681,15 @@ install_codex_config
 install_codex_skills
 
 install_ai_kit_bins() {
-  local bin_dir="${HOME}/.local/bin"
   local kit_bin_dir="${SCRIPT_DIR}/ai-kit/bin"
 
   [[ -d "${kit_bin_dir}" ]] || return 0
-  mkdir -p "${bin_dir}"
+  ensure_local_bin
 
   local commands=(ai-context ai-risk ai-failure ai-codex-prompt)
   for cmd in "${commands[@]}"; do
     local src="${kit_bin_dir}/${cmd}"
-    local dest="${bin_dir}/${cmd}"
+    local dest="${LOCAL_BIN}/${cmd}"
 
     [[ -x "${src}" ]] || continue
 
@@ -681,23 +731,22 @@ if [[ "$WITH_GIT" == true ]]; then
   ln -sf "${SCRIPT_DIR}/.gitconfig" "${HOME}/.gitconfig"
 fi
 
-echo "Symlinked starship.toml, nvim init.vim, .screenrc, Claude Code config, and Codex config from ${SCRIPT_DIR}"
+echo "Symlinked nvim init.vim, .screenrc, Claude Code config, and Codex config from ${SCRIPT_DIR}"
 if [[ "$WITH_GIT" != true ]]; then
   echo "Tip: run with --git to symlink .gitconfig (skipped by default)."
-fi
-if [[ "$NO_APT" != true ]] && [[ -f /etc/debian_version ]]; then
-  echo "Tip: install Starship with its curl script — see README."
 fi
 if command -v nvim &>/dev/null && [[ -f "${XDG_DATA_HOME:-${HOME}/.local/share}/nvim/site/autoload/plug.vim" ]]; then
   echo "Tip: run 'nvim +PlugInstall +qall' once to install plugins (needs git + network)."
 fi
 echo ""
-echo "=== Next step: start zsh ==="
-if command -v zsh &>/dev/null; then
-  echo "Your login shell should be zsh after a new login. To use it now without logging out:"
-  echo "  exec zsh -l"
+if command -v zsh &>/dev/null && [[ -t 0 ]]; then
+  echo "=== Starting zsh ==="
+  exec zsh -l
+elif command -v zsh &>/dev/null; then
+  echo "=== Next step: start zsh ==="
+  echo "Run: exec zsh -l"
   echo "Or open a new SSH session / terminal tab (full login)."
 else
-  echo "zsh was not installed — fix that first, then re-run ./install.sh or add the source hook manually."
+  echo "=== Next step: install zsh ==="
+  echo "zsh was not installed — fix that first, then re-run ./install.sh."
 fi
-echo "Note: source ~/.zshrc only reloads config in your current shell; it does not switch bash → zsh."

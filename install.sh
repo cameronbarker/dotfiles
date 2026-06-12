@@ -289,37 +289,41 @@ install_nvim_appimage() {
   fi
 
   local url work
-  url="https://github.com/neovim/neovim/releases/latest/download/${asset}"
-  work="$(mktemp -d)"
-  echo "Downloading Neovim AppImage: ${url}"
-  if ! curl -fL --retry 3 -o "${work}/${asset}" "${url}"; then
-    rm -rf "${work}"
-    echo "Neovim AppImage download failed." >&2
-    return 0
-  fi
-  chmod u+x "${work}/${asset}"
-
-  # Extract instead of running the AppImage directly — no FUSE (needed for many LXCs / minimal hosts).
-  echo "Extracting AppImage to /opt/nvim (works without FUSE)..."
-  if ! (cd "${work}" && "./${asset}" --appimage-extract); then
-    rm -rf "${work}"
-    echo "Neovim AppImage --appimage-extract failed." >&2
-    return 0
-  fi
-  if [[ ! -f "${work}/squashfs-root/usr/bin/nvim" ]]; then
-    rm -rf "${work}"
-    echo "Neovim AppImage layout missing squashfs-root/usr/bin/nvim" >&2
-    return 0
-  fi
-
-  if [[ ${#priv[@]} -eq 0 ]]; then
-    rm -rf /opt/nvim
-    mv "${work}/squashfs-root" /opt/nvim
+  if [[ -x /opt/nvim/usr/bin/nvim ]]; then
+    echo "Neovim already installed at /opt/nvim/usr/bin/nvim; skipping AppImage download."
   else
-    "${priv[@]}" rm -rf /opt/nvim
-    "${priv[@]}" mv "${work}/squashfs-root" /opt/nvim
+    url="https://github.com/neovim/neovim/releases/latest/download/${asset}"
+    work="$(mktemp -d)"
+    echo "Downloading Neovim AppImage: ${url}"
+    if ! curl -fL --retry 3 -o "${work}/${asset}" "${url}"; then
+      rm -rf "${work}"
+      echo "Neovim AppImage download failed." >&2
+      return 0
+    fi
+    chmod u+x "${work}/${asset}"
+
+    # Extract instead of running the AppImage directly — no FUSE (needed for many LXCs / minimal hosts).
+    echo "Extracting AppImage to /opt/nvim (works without FUSE)..."
+    if ! (cd "${work}" && "./${asset}" --appimage-extract); then
+      rm -rf "${work}"
+      echo "Neovim AppImage --appimage-extract failed." >&2
+      return 0
+    fi
+    if [[ ! -f "${work}/squashfs-root/usr/bin/nvim" ]]; then
+      rm -rf "${work}"
+      echo "Neovim AppImage layout missing squashfs-root/usr/bin/nvim" >&2
+      return 0
+    fi
+
+    if [[ ${#priv[@]} -eq 0 ]]; then
+      rm -rf /opt/nvim
+      mv "${work}/squashfs-root" /opt/nvim
+    else
+      "${priv[@]}" rm -rf /opt/nvim
+      "${priv[@]}" mv "${work}/squashfs-root" /opt/nvim
+    fi
+    rm -rf "${work}"
   fi
-  rm -rf "${work}"
 
   local path_line='export PATH="/opt/nvim/usr/bin:$PATH"'
   local tmpf

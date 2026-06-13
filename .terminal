@@ -40,6 +40,8 @@ source "${_PB_TERMINAL_DIR}/terminal/tmux.sh"
 source "${_PB_TERMINAL_DIR}/terminal/aliases.sh"
 # shellcheck source=terminal/git.sh
 source "${_PB_TERMINAL_DIR}/terminal/git.sh"
+# shellcheck source=terminal/systemd.sh
+source "${_PB_TERMINAL_DIR}/terminal/systemd.sh"
 # shellcheck source=terminal/rails.sh
 source "${_PB_TERMINAL_DIR}/terminal/rails.sh"
 # shellcheck source=terminal/utilities.sh

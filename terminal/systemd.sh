@@ -4,16 +4,28 @@
 alias sc='systemctl'
 
 # list services and the name to pass to sc (e.g. sc status nginx)
+# default: running and failed; scl -a for all loaded units
 scl() {
   if ! command -v systemctl >/dev/null 2>&1; then
     echo 'scl: systemctl not found (Linux only)' >&2
     return 1
   fi
 
-  systemctl list-units --type=service --all --no-pager --plain \
+  local -a cmd=(systemctl list-units --type=service --no-pager --plain --no-legend)
+
+  case "${1:-}" in
+    -a|--all)
+      shift
+      cmd+=(--all)
+      ;;
+    *)
+      cmd+=(--state=running,failed)
+      ;;
+  esac
+
+  "${cmd[@]}" \
     | awk '
-      NR == 1 { next }
-      {
+      $1 ~ /\.service$/ {
         full = $1
         state = $3
         name = full
@@ -22,3 +34,79 @@ scl() {
       }
     '
 }
+
+# follow journal logs for a service (e.g. scj frigate)
+scj() {
+  if ! command -v journalctl >/dev/null 2>&1; then
+    echo 'scj: journalctl not found (Linux only)' >&2
+    return 1
+  fi
+  if [[ -z "${1:-}" ]]; then
+    echo 'usage: scj <service> [lines]' >&2
+    return 1
+  fi
+
+  local unit="$1"
+  local lines="${2:-50}"
+  [[ "${unit}" == *.service ]] || unit="${unit}.service"
+  journalctl -u "${unit}" -n "${lines}" -f
+}
+
+# reuse systemctl/journalctl completion for sc and scj
+_pb_sc_completion() {
+  if [[ -n "${ZSH_VERSION:-}" ]]; then
+    autoload -Uz _systemctl 2>/dev/null
+    (( $+functions[_systemctl] )) && compdef _systemctl sc
+    autoload -Uz _journalctl 2>/dev/null
+    (( $+functions[_journalctl] )) && compdef _journalctl scj
+    unfunction _pb_sc_completion 2>/dev/null
+    return 0
+  fi
+
+  if [[ -n "${BASH_VERSION:-}" ]]; then
+    if ! declare -f _systemctl &>/dev/null; then
+      local _pb_bash_completion
+      for _pb_bash_completion in \
+        /usr/share/bash-completion/completions/systemctl \
+        /etc/bash_completion.d/systemctl; do
+        if [[ -r "${_pb_bash_completion}" ]]; then
+          # shellcheck source=/dev/null
+          source "${_pb_bash_completion}"
+          break
+        fi
+      done
+    fi
+    if ! declare -f _journalctl &>/dev/null; then
+      for _pb_bash_completion in \
+        /usr/share/bash-completion/completions/journalctl \
+        /etc/bash_completion.d/journalctl; do
+        if [[ -r "${_pb_bash_completion}" ]]; then
+          # shellcheck source=/dev/null
+          source "${_pb_bash_completion}"
+          break
+        fi
+      done
+      unset _pb_bash_completion
+    fi
+    if declare -f _systemctl &>/dev/null; then
+      complete -F _systemctl sc 2>/dev/null
+    fi
+    if declare -f _journalctl &>/dev/null; then
+      complete -F _journalctl scj 2>/dev/null
+    fi
+    unset -f _pb_sc_completion 2>/dev/null
+  fi
+}
+
+if command -v systemctl >/dev/null 2>&1; then
+  if [[ -n "${ZSH_VERSION:-}" ]] && (( $+functions[compdef] )); then
+    _pb_sc_completion
+  elif [[ -n "${ZSH_VERSION:-}" ]]; then
+    autoload -Uz add-zsh-hook 2>/dev/null
+    if (( $+functions[add-zsh-hook] )); then
+      add-zsh-hook precmd _pb_sc_completion
+    fi
+  elif [[ -n "${BASH_VERSION:-}" ]]; then
+    _pb_sc_completion
+  fi
+fi

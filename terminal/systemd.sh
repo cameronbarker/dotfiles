@@ -55,11 +55,25 @@ scj() {
 # reuse systemctl/journalctl completion for sc and scj
 _pb_sc_completion() {
   if [[ -n "${ZSH_VERSION:-}" ]]; then
+    (( $+functions[compdef] )) || return 0
+
+    local registered=0
     autoload -Uz _systemctl 2>/dev/null
-    (( $+functions[_systemctl] )) && compdef _systemctl sc
+    if (( $+functions[_systemctl] )); then
+      compdef _systemctl sc
+      registered=1
+    fi
     autoload -Uz _journalctl 2>/dev/null
-    (( $+functions[_journalctl] )) && compdef _journalctl scj
-    unfunction _pb_sc_completion 2>/dev/null
+    if (( $+functions[_journalctl] )); then
+      compdef _journalctl scj
+      registered=1
+    fi
+
+    if (( registered )); then
+      autoload -Uz add-zsh-hook 2>/dev/null
+      (( $+functions[add-zsh-hook] )) && add-zsh-hook -D precmd _pb_sc_completion
+      unfunction _pb_sc_completion 2>/dev/null
+    fi
     return 0
   fi
 
@@ -99,11 +113,12 @@ _pb_sc_completion() {
 }
 
 if command -v systemctl >/dev/null 2>&1; then
-  if [[ -n "${ZSH_VERSION:-}" ]] && (( $+functions[compdef] )); then
-    _pb_sc_completion
-  elif [[ -n "${ZSH_VERSION:-}" ]]; then
+  if [[ -n "${ZSH_VERSION:-}" ]]; then
     autoload -Uz add-zsh-hook 2>/dev/null
-    if (( $+functions[add-zsh-hook] )); then
+    (( $+functions[add-zsh-hook] )) && add-zsh-hook -D precmd _pb_sc_completion
+    if (( $+functions[compdef] )); then
+      _pb_sc_completion
+    elif (( $+functions[add-zsh-hook] )); then
       add-zsh-hook precmd _pb_sc_completion
     fi
   elif [[ -n "${BASH_VERSION:-}" ]]; then

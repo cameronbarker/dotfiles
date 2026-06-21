@@ -2,15 +2,57 @@
 
 Personal config files for a cross-platform (macOS/Linux) dev environment.
 
-## Quick install (Debian/Linux, zsh)
+## Bootstrap install (no git required)
 
-Fresh Debian/Linux instance one-liner:
+[`bootstrap.sh`](bootstrap.sh) downloads a GitHub archive with **curl + tar only** (no `git` or `gh`), optionally verifies SHA-256, runs [`install.sh`](install.sh), and cleans up. On Debian/Ubuntu it installs missing `curl`/`ca-certificates` via `apt-get` (with `sudo` when not root).
+
+**Security:** `curl … | bash` trusts whatever the remote script is *right now*. Without `--sha256`, you are accepting mutable content. That is convenient and common; it is not reproducible or tamper-evident. Prefer a **tag + `--sha256`** when you care about integrity.
+
+### a) One-liner from `main` (mutable, not verified)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/cameronbarker/dotfiles/main/bootstrap.sh | bash
+```
+
+Same pattern as `curl -fsSL https://chatgpt.com/codex/install.sh | sh`: the script is piped in with no flags, so bootstrap assumes `--no-verify` and prints a warning. Use **`bash`**, not plain `sh` — this script needs Bash.
+
+Proxmox / root: same command (bootstrap uses `apt-get` directly when uid 0).
+
+### b) Safer install from a tag with SHA-256
+
+Compute the digest once on a trusted machine, then install with the same ref and hash:
+
+```sh
+curl -fsSL -o dotfiles.tar.gz \
+  https://github.com/cameronbarker/dotfiles/archive/v1.0.0.tar.gz
+shasum -a 256 dotfiles.tar.gz   # or: sha256sum dotfiles.tar.gz
+
+curl -fsSL https://raw.githubusercontent.com/cameronbarker/dotfiles/main/bootstrap.sh \
+  | bash -s -- --ref v1.0.0 --sha256 '<paste-64-char-hex-here>'
+```
+
+Use `--keep` to leave the temp download directory in place for debugging.
+
+### c) Install with `--clone` (git checkout after bootstrap)
+
+Bootstrap does not need git. Pass `--clone` to replace `~/.dotfiles` with a shallow git clone after the first install (requires git on `PATH` after `install.sh`):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/cameronbarker/dotfiles/main/bootstrap.sh \
+  | bash -s -- --clone
+```
+
+Archive installs are published to `~/.dotfiles` before symlinks are created, so cleanup of the temp extract does not break your config.
+
+## Quick install (git clone)
+
+If you already have git and prefer a checkout:
 
 ```sh
 sudo apt update && sudo apt install -y git && git clone https://github.com/cameronbarker/dotfiles.git && cd dotfiles && chmod +x install.sh && ./install.sh
 ```
 
-Proxmox/root (no `sudo`) one-liner:
+Proxmox/root (no `sudo`):
 
 ```sh
 apt update && apt install -y git && git clone https://github.com/cameronbarker/dotfiles.git && cd dotfiles && chmod +x install.sh && ./install.sh
@@ -64,6 +106,7 @@ Shell blocks are removed from **both** `~/.bashrc` and `~/.zshrc` when present. 
 | `.screenrc` | GNU screen defaults (symlinked to `~`) |
 | `starship.toml` | [Starship](https://starship.rs) prompt config |
 | `vscode.jsonc` | VSCode `settings.json` |
+| `bootstrap.sh` | Download GitHub archive (curl/tar), verify SHA-256, run `install.sh` — no git required |
 | `install.sh` | Symlinks, shell hook, apt on Debian; Neovim AppImage + Atuin by default on Linux |
 | `uninstall.sh` | Reverse symlinks + rc markers; optional AppImage / Atuin / vim-plug / plugged |
 

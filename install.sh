@@ -31,6 +31,37 @@ for arg in "$@"; do
   esac
 done
 
+# Archive/bootstrap installs extract to a temp dir; publish to ~/.dotfiles so symlinks survive cleanup.
+publish_from_extract_if_needed() {
+  if [[ -d "${SCRIPT_DIR}/.git" ]]; then
+    return 0
+  fi
+  if [[ -n "${DOTFILES_SKIP_PUBLISH:-}" ]]; then
+    return 0
+  fi
+
+  local publish_dir="${HOME}/.dotfiles"
+  if [[ -d "${publish_dir}/.git" ]]; then
+    return 0
+  fi
+  if [[ "${SCRIPT_DIR}" == "${publish_dir}" ]]; then
+    return 0
+  fi
+
+  echo "Publishing dotfiles from archive extract to ${publish_dir}..."
+  mkdir -p "${publish_dir}"
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a "${SCRIPT_DIR}/" "${publish_dir}/"
+  else
+    cp -a "${SCRIPT_DIR}/." "${publish_dir}/"
+  fi
+
+  export DOTFILES_SKIP_PUBLISH=1
+  exec bash "${publish_dir}/install.sh" "$@"
+}
+
+publish_from_extract_if_needed "$@"
+
 MARKER='# pb-configs dotfiles'
 SOURCE_LINE="source \"${SCRIPT_DIR}/.terminal\""
 NVIM_PATH_MARKER='# pb-configs: Neovim AppImage on PATH'

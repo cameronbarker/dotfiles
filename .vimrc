@@ -251,10 +251,26 @@ silent! colorscheme catppuccin
 " -----------------------------------------------------------------------------
 " Autocommands
 " -----------------------------------------------------------------------------
+" Keep one empty line at the bottom of the buffer so you can type there without
+" jumping to end-of-line first. The padding line is removed before save.
+function! s:EnsurePaddingBlankLine() abort
+  if line('$') == 0 || getline('$') !=# ''
+    call append(line('$'), '')
+  endif
+endfunction
+
+function! s:StripPaddingBlankLine() abort
+  if line('$') > 1 && getline('$') ==# ''
+    $d_
+  endif
+endfunction
+
 augroup general
   autocmd!
   " Remove trailing whitespace on save
   autocmd BufWritePre * :%s/\s\+$//e
+  autocmd BufWritePre * call s:StripPaddingBlankLine()
+  autocmd BufReadPost,BufNewFile,BufWritePost * call s:EnsurePaddingBlankLine()
   " Return to last edit position when opening a file
   autocmd BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
 augroup END

@@ -200,7 +200,7 @@ install_apt_packages() {
   # xclip, wl-clipboard — clipboard for cwd alias (X11 and Wayland)
   # git, curl — vim-plug and :PlugInstall clone plugins
   # neovim from apt only with --no-nvim-appimage (default is extracted AppImage on Linux)
-  local packages=(bat fzf ripgrep zoxide screen tmux unzip xclip wl-clipboard git curl zsh)
+  local packages=(bat fzf ripgrep zoxide screen tmux unzip xclip wl-clipboard git curl zsh rsync jq gawk)
   if [[ "$NVIM_APPIMAGE" != true ]]; then
     packages=(neovim "${packages[@]}")
   fi

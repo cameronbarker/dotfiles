@@ -22,4 +22,6 @@ alias pfo='git pull origin'
 alias pto='git push origin'
 
 # git commit with staged changes
+# shellcheck disable=SC2034
+PB_DESC_gca="amend the last commit without editing its message"
 gca() { git commit --amend --no-edit "$@"; }

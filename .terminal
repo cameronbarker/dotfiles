@@ -46,6 +46,8 @@ source "${_PB_TERMINAL_DIR}/terminal/systemd.sh"
 source "${_PB_TERMINAL_DIR}/terminal/rails.sh"
 # shellcheck source=terminal/utilities.sh
 source "${_PB_TERMINAL_DIR}/terminal/utilities.sh"
+# shellcheck source=terminal/scaffold.sh
+source "${_PB_TERMINAL_DIR}/terminal/scaffold.sh"
 # shellcheck source=terminal/path.sh
 source "${_PB_TERMINAL_DIR}/terminal/path.sh"
 # shellcheck source=terminal/fzf.sh

@@ -14,6 +14,6 @@ alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 
 # -----------------------------------------------------------------------------
-# Help
+# Discovery
 # -----------------------------------------------------------------------------
-alias help='alias | grep'
+alias aliases='alias'

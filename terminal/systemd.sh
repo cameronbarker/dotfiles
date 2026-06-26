@@ -5,6 +5,8 @@ alias sc='systemctl'
 
 # list services and the name to pass to sc (e.g. sc status nginx)
 # default: running and failed; scl -a for all loaded units
+# shellcheck disable=SC2034
+PB_DESC_scl="list systemd services with sc status commands"
 scl() {
   if ! command -v systemctl >/dev/null 2>&1; then
     echo 'scl: systemctl not found (Linux only)' >&2
@@ -36,6 +38,8 @@ scl() {
 }
 
 # follow journal logs for a service (e.g. scj frigate)
+# shellcheck disable=SC2034
+PB_DESC_scj="follow journal logs for a systemd service"
 scj() {
   if ! command -v journalctl >/dev/null 2>&1; then
     echo 'scj: journalctl not found (Linux only)' >&2

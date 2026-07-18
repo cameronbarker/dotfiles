@@ -1,6 +1,6 @@
 ---
 name: 0-maintain-project-workflow
-description: Coordinate repository maintenance by proposing and sequencing maintain-agent-config, generate-ai-context, maintain-project-docs, and plan-and-commit-work with mode-aware approval gates. Use when asked to maintain this repo, run project maintenance, refresh project workflow, update repo context and docs, run maintenance workflow, prepare repo for GPT, or sync agent config docs and commits.
+description: Coordinate repository maintenance by proposing and sequencing maintain-agent-config, maintain-project-docs, and plan-and-commit-work with mode-aware approval gates. Use when asked to maintain this repo, run project maintenance, refresh project workflow, update repo context and docs, run maintenance workflow, prepare repo for GPT, or sync agent config docs and commits.
 ---
 
 # Maintain Project Workflow
@@ -23,7 +23,6 @@ Coordinate existing repo-maintenance skills in a safe, ordered workflow. Act as 
 Use these skills when available:
 
 - `maintain-agent-config`
-- `generate-ai-context`
 - `maintain-project-docs`
 - `plan-and-commit-work`
 
@@ -34,7 +33,7 @@ Read and summarize repository guidance before proposing workflow:
 - `AGENTS.md` (if present)
 - `.codex/AGENTS.md`
 - `.ai/context`
-- `ai-context/README.md` and `ai-context/generation-metadata.json` when present
+- `ai-context/README.md` and `ai-context/generation-metadata.json` when explicitly requested
 
 Treat guidance as constraints for proposal and execution order.
 
@@ -43,15 +42,13 @@ Treat guidance as constraints for proposal and execution order.
 Use this default order unless a step is unavailable or clearly not applicable:
 
 1. `maintain-agent-config`
-2. `generate-ai-context`
-3. `maintain-project-docs`
-4. `plan-and-commit-work`
+2. `maintain-project-docs`
+3. `plan-and-commit-work`
 
 Apply these ordering rules:
 
-- Run agent/config guidance before generating or refreshing `ai-context/`.
-- If agent/config guidance changes, run `generate-ai-context` after that and before docs.
-- If `ai-context/` or docs change, run `plan-and-commit-work` last.
+- Do not generate or refresh `ai-context/` as part of local maintenance unless the user explicitly asks for that generated artifact.
+- If docs change, run `plan-and-commit-work` last.
 
 ## Proposal Phase (Mandatory)
 
@@ -91,7 +88,6 @@ When approval is explicit:
 In optimistic mode, the orchestrator may proceed without re-asking between low-risk stages when no edits outside allowed low-risk scopes are needed, including:
 
 - running `maintain-agent-config` inspection/proposal
-- running `generate-ai-context` and refreshing `ai-context/**`
 - running `maintain-project-docs` inspection/proposal
 - continuing from one low-risk step to the next
 
@@ -100,7 +96,6 @@ In optimistic mode, the orchestrator may proceed without re-asking between low-r
 Use this map in the workflow proposal:
 
 - `maintain-agent-config`: `AGENTS.md` (if present), `.codex/AGENTS.md`, `.ai/context`, `.claude/**`, `.codex/skills/**` (as approved)
-- `generate-ai-context`: `ai-context/**`
 - `maintain-project-docs`: `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`
 - `plan-and-commit-work`: no file edits by default; may run git write commands only with explicit approval
 
@@ -108,7 +103,6 @@ Use this map in the workflow proposal:
 
 In `optimistic` mode, these are allowed without additional stage-by-stage approval:
 
-- refreshing `ai-context/**`
 - small `README.md` updates that only correct documented commands or references
 - proposing doc updates without editing
 - final commit planning without git writes

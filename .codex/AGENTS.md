@@ -104,44 +104,24 @@ When writing one-off scripts, automation, or local tooling:
 - Do not introduce a new language/runtime into a project without a clear reason.
 - If multiple languages are viable, choose the one with the smallest dependency footprint.
 
-## Repo Tools First (AI Kit)
+## AI Kit Disabled Locally
 
-If `.codex/project.yml` exists, treat the repository as AI-kit bootstrapped and prefer deterministic repo tools before broad manual exploration when they are available on `PATH`.
+Do not run local AI-kit commands or shell aliases from this repository's Codex workflow.
 
-At session or task start:
-- Check for `.codex/project.yml`.
-- Check command availability:
-  - `command -v ai-risk`
-  - `command -v ai-context`
-  - `command -v ai-failure`
-  - `command -v ai-codex-prompt`
-- If `ai-context/` exists, read relevant generated files only for orientation.
-- Do not generate or overwrite context automatically.
+Disabled commands and aliases:
+- `ai-risk`
+- `ai-context`
+- `ai-failure`
+- `ai-codex-prompt`
+- `airisk`
+- `aictx`
+- `aifail`
+- `aiprompt`
 
-Tool-use policy:
-- Use the smallest relevant tool for the task.
-- Do not run all AI-kit commands for every prompt.
-- If a tool is unavailable, continue with normal workflow and report AI kit was unavailable.
+Ignore `.codex/project.yml` for automatic tool selection. If `ai-context/` exists, treat it as stale orientation material unless the user explicitly asks to inspect or regenerate it.
 
-Inspect mode:
-- When target paths are known, run `ai-risk --json <paths>`.
-- Use existing `ai-context/` docs when present.
-- Avoid broad repo exploration unless requested or needed.
-
-Debug mode:
-- For failing commands, prefer `ai-failure -- <command>`.
-- Use the failure summary before deeper manual inspection.
-
-Edit mode:
-- Before editing known target files, run `ai-risk --json <paths>`.
-- If risk is critical/blocking, stop and ask for explicit approval.
-- If risk is high, inspect first and state risk before editing.
-- Run narrow validation after changes.
-
-Review mode:
-- Run `ai-risk --json` on changed files when possible.
-- Use risk output to structure severity and recommendations.
-
-Context generation:
-- Only run `ai-context --force` when explicitly requested by the user or when an edit prompt explicitly allows generated artifacts.
-- Generated context is orientation-only; source files are authoritative.
+Use normal Codex inspection instead:
+- Read the smallest relevant set of source/config files.
+- Use targeted `rg`, `sed`, and read-only git commands for context.
+- Ask for approval before editing high-risk agent, secrets, infrastructure, or destructive-operation guidance.
+- Run narrow validation commands after edits when available.

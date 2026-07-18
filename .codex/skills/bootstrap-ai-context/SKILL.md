@@ -38,10 +38,8 @@ Inspect a repository and bootstrap minimal, safe repo-local AI kit config for Co
 5. Produce proposed YAML for both target files.
 6. Stop and request explicit confirmation before writing files.
 7. If confirmed, create only `.codex/project.yml` and `.codex/risk-paths.yml` unless broader edits are explicitly authorized.
-8. After editing, run:
-   - `ai-risk --json README.md || true`
-   - `ai-codex-prompt inspect assess repo bootstrap`
-9. Report outputs, limitations, and next-step options.
+8. After editing, inspect the created YAML files directly and report limitations or unresolved unknowns.
+9. Report files created, validation performed, limitations, and next-step options.
 
 ## Discovery Rules
 
@@ -78,7 +76,7 @@ For inspect-only mode, return:
 For edit mode, return:
 
 - files created
-- validation commands run
+- validation performed
 - key command outputs
 - limitations or unresolved unknowns
 - recommended next step

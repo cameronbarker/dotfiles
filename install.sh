@@ -798,30 +798,21 @@ install_codex_config
 
 install_codex_skills
 
-install_ai_kit_bins() {
+remove_ai_kit_bins_if_ours() {
   local kit_bin_dir="${SCRIPT_DIR}/ai-kit/bin"
-
-  [[ -d "${kit_bin_dir}" ]] || return 0
-  ensure_local_bin
-
   local commands=(ai-context ai-risk ai-failure ai-codex-prompt)
+
   for cmd in "${commands[@]}"; do
     local src="${kit_bin_dir}/${cmd}"
     local dest="${LOCAL_BIN}/${cmd}"
 
-    [[ -x "${src}" ]] || continue
-
-    if [[ -L "${dest}" ]]; then
-      ln -sf "${src}" "${dest}"
-    elif [[ -e "${dest}" ]]; then
-      echo "Skip ${dest}: exists and is not a symlink." >&2
-    else
-      ln -sf "${src}" "${dest}"
+    if [[ -L "${dest}" ]] && [[ "$(readlink "${dest}")" == "${src}" ]]; then
+      rm "${dest}"
     fi
   done
 }
 
-install_ai_kit_bins
+remove_ai_kit_bins_if_ours
 
 install_tmux_config() {
   local tmux_src="${SCRIPT_DIR}/.tmux.conf"

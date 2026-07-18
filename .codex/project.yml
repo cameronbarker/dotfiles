@@ -11,7 +11,7 @@ codex:
     planning_tool: chatgpt_desktop
     execution_tool: codex
 ai_context:
-  enabled: true
+  enabled: false
   output_dir: ai-context
   include:
     - AGENTS.md

@@ -1,37 +1,21 @@
-## Repo Tools First Rule
+## AI Kit Disabled Rule
 
-If `.codex/project.yml` exists, treat the repo as AI-kit bootstrapped.
+Do not run local AI-kit commands or shell aliases from this repository's Codex workflow.
 
-At session/task startup:
-- Check AI-kit command availability with:
-  - `command -v ai-risk`
-  - `command -v ai-context`
-  - `command -v ai-failure`
-  - `command -v ai-codex-prompt`
-- If `ai-context/` exists, use relevant generated files as orientation only.
-- Never auto-run `ai-context --force`.
+Disabled commands and aliases:
+- `ai-risk`
+- `ai-context`
+- `ai-failure`
+- `ai-codex-prompt`
+- `airisk`
+- `aictx`
+- `aifail`
+- `aiprompt`
 
-Use only the smallest relevant AI-kit tool:
-- `ai-risk` for path-based inspect/edit/review risk classification.
-- `ai-failure` to capture and summarize failing command runs.
-- `ai-context` generated docs for orientation, never as source of truth.
-- `ai-codex-prompt` for scoped handoffs/prompt shaping when helpful.
+Ignore `.codex/project.yml` for automatic tool selection. If `ai-context/` exists, treat it as stale orientation material unless the user explicitly asks to inspect or regenerate it.
 
-Mode-specific behavior:
-- Inspect mode:
-  - Run `ai-risk --json <paths>` when target paths are known.
-  - Avoid broad repo exploration unless needed.
-- Debug mode:
-  - Prefer `ai-failure -- <command>` for failing commands.
-  - Use summary output before deeper manual inspection.
-- Edit mode:
-  - Before editing known targets, run `ai-risk --json <paths>`.
-  - If risk is critical/blocking, stop and request explicit approval.
-  - If risk is high, inspect first and state risk before edits.
-  - Run narrow, relevant validation after edits.
-- Review mode:
-  - Run `ai-risk --json` on changed files when possible.
-  - Use risk output to structure review severity/recommendations.
-
-Fallback:
-- If one or more AI-kit tools are unavailable on `PATH`, continue normally and report AI kit was unavailable for that step.
+Use normal Codex inspection instead:
+- Read the smallest relevant set of source/config files.
+- Use targeted `rg`, `sed`, and read-only git commands for context.
+- Ask for approval before editing high-risk agent, secrets, infrastructure, or destructive-operation guidance.
+- Run narrow validation commands after edits when available.

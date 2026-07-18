@@ -7,41 +7,6 @@ export AI_CLI="${AI_CLI:-codex}"
 PB_DESC_ai="run the configured AI CLI"
 ai() { command "${AI_CLI}" "$@"; }
 
-_ai_kit_command() {
-  local cmd repo_root repo_cmd
-  cmd="$1"
-
-  if repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
-    repo_cmd="${repo_root}/ai-kit/bin/${cmd}"
-    if [ -x "${repo_cmd}" ]; then
-      command "${repo_cmd}" "${@:2}"
-      return
-    fi
-  fi
-
-  if command -v "${cmd}" >/dev/null 2>&1; then
-    command "${cmd}" "${@:2}"
-    return
-  fi
-
-  echo "AI kit command not found: ${cmd}" >&2
-  echo "Hint: expected repo-local command at ai-kit/bin/${cmd} or install ${cmd} on PATH." >&2
-  return 1
-}
-
-# shellcheck disable=SC2034
-PB_DESC_aictx="run ai-context from this repo or PATH"
-aictx() { _ai_kit_command "ai-context" "$@"; }
-# shellcheck disable=SC2034
-PB_DESC_airisk="run ai-risk from this repo or PATH"
-airisk() { _ai_kit_command "ai-risk" "$@"; }
-# shellcheck disable=SC2034
-PB_DESC_aifail="run ai-failure from this repo or PATH"
-aifail() { _ai_kit_command "ai-failure" "$@"; }
-# shellcheck disable=SC2034
-PB_DESC_aiprompt="run ai-codex-prompt from this repo or PATH"
-aiprompt() { _ai_kit_command "ai-codex-prompt" "$@"; }
-
 _pb_function_ignored() {
   local name ignored
   name="$1"
@@ -67,10 +32,37 @@ pb() {
   local description name query
   query="${1:-}"
 
+  case "${query}" in
+    scaffold)
+      if ! type scaffold >/dev/null 2>&1; then
+        echo "pb: scaffold function is not loaded" >&2
+        return 1
+      fi
+
+      shift
+      if [ "$#" -eq 0 ]; then
+        echo "Available scaffolds:"
+        scaffold --list
+      else
+        scaffold "$@"
+      fi
+      return
+      ;;
+    scaffolds)
+      if ! type scaffold >/dev/null 2>&1; then
+        echo "pb: scaffold function is not loaded" >&2
+        return 1
+      fi
+
+      scaffold --list
+      return
+      ;;
+  esac
+
   {
     for name in \
-      pb ai aictx airisk aifail aiprompt \
-      mkcd extract serve ff scaffold gca scl scj \
+      pb ai \
+      mkcd extract serve ff port scaffold gca scl scj \
       tmux_split_v tmux_split_h tmux_kill_pane tmux_zoom_pane \
       tmux_new_window tmux_rename_window \
       tmux_focus_left tmux_focus_right tmux_focus_up tmux_focus_down \
@@ -125,3 +117,25 @@ serve() { python3 -m http.server "${1:-8000}"; }
 # shellcheck disable=SC2034
 PB_DESC_ff="find files by name under the current directory"
 ff() { find . -name "*$1*" 2>/dev/null; }
+
+# check whether a TCP port is reachable on a host
+# shellcheck disable=SC2034
+PB_DESC_port="check whether a TCP port is open on a host"
+port() {
+  local host="$1" port_num="$2"
+
+  if [ -z "${host}" ] || [ -z "${port_num}" ]; then
+    echo "Usage: port <host> <port>" >&2
+    return 1
+  fi
+
+  if ! command -v nc >/dev/null 2>&1; then
+    echo "port: nc (netcat) is required" >&2
+    return 1
+  fi
+
+  case "$(uname -s)" in
+    Darwin) nc -zv -G 3 "${host}" "${port_num}" ;;
+    *)      nc -zv -w 3 "${host}" "${port_num}" ;;
+  esac
+}

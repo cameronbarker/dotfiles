@@ -9,6 +9,8 @@ alias c='clear'
 alias vim='nvim'
 export EDITOR="vim"
 alias edit="${EDITOR:-vim}"
+export IDE="${IDE:-cursor}"
+alias ide="${IDE}"
 
 # -----------------------------------------------------------------------------
 # Pager

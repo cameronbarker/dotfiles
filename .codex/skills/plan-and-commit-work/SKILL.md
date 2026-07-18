@@ -13,7 +13,6 @@ Read repository guidance before planning commits:
 
 - `AGENTS.md` (if present)
 - `.codex/AGENTS.md` (if present)
-- `.ai/context` (if present)
 - repo-specific git workflow docs when present (for example `.claude/rules/git-workflow.md`)
 
 If guidance files conflict, follow higher-priority system/developer/user instructions first, then repo guidance.

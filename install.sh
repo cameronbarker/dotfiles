@@ -798,22 +798,6 @@ install_codex_config
 
 install_codex_skills
 
-remove_ai_kit_bins_if_ours() {
-  local kit_bin_dir="${SCRIPT_DIR}/ai-kit/bin"
-  local commands=(ai-context ai-risk ai-failure ai-codex-prompt)
-
-  for cmd in "${commands[@]}"; do
-    local src="${kit_bin_dir}/${cmd}"
-    local dest="${LOCAL_BIN}/${cmd}"
-
-    if [[ -L "${dest}" ]] && [[ "$(readlink "${dest}")" == "${src}" ]]; then
-      rm "${dest}"
-    fi
-  done
-}
-
-remove_ai_kit_bins_if_ours
-
 install_tmux_config() {
   local tmux_src="${SCRIPT_DIR}/.tmux.conf"
   local tmux_dest="${HOME}/.tmux.conf"

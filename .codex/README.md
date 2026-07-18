@@ -15,8 +15,6 @@ This directory is the **source of truth** for Codex settings used across all rep
 
 | File | Role |
 |------|------|
-| `project.yml` | Dotfiles project metadata for ai-context |
-| `risk-paths.yml` | Path-based risk for this repo (`ai-kit`) |
 | `config.toml` | Example defaults; live config is `~/.codex/config.toml` |
 | `hooks.json` | Project hooks when working in this repo |
 | `skills/` | Optional; install does not symlink skills (avoids clobbering `~/.codex/skills`) |

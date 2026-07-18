@@ -2,6 +2,3 @@ tmp/
 
 # macOS folder metadata (regenerated; causes noisy diffs / merge conflicts)
 .DS_Store
-
-# Generated AI context artifacts
-ai-context/

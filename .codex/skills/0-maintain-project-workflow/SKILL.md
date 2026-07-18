@@ -32,8 +32,6 @@ Read and summarize repository guidance before proposing workflow:
 
 - `AGENTS.md` (if present)
 - `.codex/AGENTS.md`
-- `.ai/context`
-- `ai-context/README.md` and `ai-context/generation-metadata.json` when explicitly requested
 
 Treat guidance as constraints for proposal and execution order.
 
@@ -47,7 +45,6 @@ Use this default order unless a step is unavailable or clearly not applicable:
 
 Apply these ordering rules:
 
-- Do not generate or refresh `ai-context/` as part of local maintenance unless the user explicitly asks for that generated artifact.
 - If docs change, run `plan-and-commit-work` last.
 
 ## Proposal Phase (Mandatory)
@@ -95,7 +92,7 @@ In optimistic mode, the orchestrator may proceed without re-asking between low-r
 
 Use this map in the workflow proposal:
 
-- `maintain-agent-config`: `AGENTS.md` (if present), `.codex/AGENTS.md`, `.ai/context`, `.claude/**`, `.codex/skills/**` (as approved)
+- `maintain-agent-config`: `AGENTS.md` (if present), `.codex/AGENTS.md`, `.claude/**`, `.codex/skills/**` (as approved)
 - `maintain-project-docs`: `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`
 - `plan-and-commit-work`: no file edits by default; may run git write commands only with explicit approval
 
@@ -111,7 +108,7 @@ In `optimistic` mode, these are allowed without additional stage-by-stage approv
 
 Always stop and request explicit approval before:
 
-- editing `AGENTS.md`, `.codex/AGENTS.md`, `.ai/context`, `.claude/**`, or `.codex/skills/**`
+- editing `AGENTS.md`, `.codex/AGENTS.md`, `.claude/**`, or `.codex/skills/**`
 - creating `CHANGELOG.md` or `CONTRIBUTING.md` if absent
 - making large `README.md` rewrites
 - staging files

@@ -4,8 +4,8 @@
 This repository is a dotfiles/tooling setup, not an application service.
 - Root config files: `.terminal` (sources topic modules in `terminal/*.sh`), `.vimrc`, `.gitconfig`, `.screenrc`, `starship.toml`, `vscode.jsonc`
 - Automation scripts: `install.sh`, `uninstall.sh`
-- Prompt/docs support: `prompts/`, `ai-context/`
-- Agent tooling/config: `.codex/`, `.claude/`, `.ai/`
+- Prompt/docs support: `prompts/`
+- Agent tooling/config: `.codex/`, `.claude/`
 
 Keep new files close to their owning concern and prefer extending existing scripts/docs over adding parallel variants.
 
@@ -50,4 +50,3 @@ There is no formal unit test suite currently. Testing is operational:
 
 ## Related guidance
 - `.codex/AGENTS.md` — GPT vs Codex routing, inspect-first habits, and **agent** git rules (no writes without explicit approval).
-- `.ai/context` — how `ai-context/` is used with GPT Project Sources.

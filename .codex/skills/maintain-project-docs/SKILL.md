@@ -22,7 +22,6 @@ Read repository guidance before proposing any documentation edits:
 
 - `AGENTS.md` (if present)
 - `.codex/AGENTS.md` (if present)
-- `.ai/context` (if present)
 
 Follow repo-specific documentation conventions when they do not conflict with higher-priority instructions.
 

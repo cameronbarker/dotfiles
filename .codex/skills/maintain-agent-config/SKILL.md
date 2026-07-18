@@ -1,6 +1,6 @@
 ---
 name: maintain-agent-config
-description: Inspect and maintain repository-local AI agent/config guidance by proposing safe, minimal updates to AGENTS.md, .codex/AGENTS.md, .ai/context, and Claude/Codex agent rule/skill folders. Use when asked to maintain agent config, update AGENTS.md, review agent guidance, align AI instructions, update Codex guidance, update Claude agents, check agent config, or reconcile AI tooling docs.
+description: Inspect and maintain repository-local AI agent/config guidance by proposing safe, minimal updates to AGENTS.md, .codex/AGENTS.md, and Claude/Codex agent rule/skill folders. Use when asked to maintain agent config, update AGENTS.md, review agent guidance, align AI instructions, update Codex guidance, update Claude agents, check agent config, or reconcile AI tooling docs.
 ---
 
 # Maintain Agent Config
@@ -12,7 +12,6 @@ Inspect agent/config guidance, identify conflicts or drift, and propose narrow u
 - Primary files and folders to inspect when present:
   - `AGENTS.md`
   - `.codex/AGENTS.md`
-  - `.ai/context`
   - `.claude/CLAUDE.md`
   - `.claude/agents/`
   - `.claude/rules/`
@@ -20,7 +19,6 @@ Inspect agent/config guidance, identify conflicts or drift, and propose narrow u
   - `.codex/skills/`
 - Supporting context only:
   - `README.md`
-  - `ai-context/`
 - Treat agent/config files as high-risk workflow configuration.
 - Do not modify application code.
 
@@ -30,7 +28,6 @@ Before proposing changes, read and summarize applicable repo guidance:
 
 - `AGENTS.md` (if present)
 - `.codex/AGENTS.md`
-- `.ai/context`
 - `.claude/CLAUDE.md` (if present)
 
 If guidance conflicts, follow higher-priority system/developer/user instructions first, then preserve stricter safety rules from repo files.
@@ -69,7 +66,6 @@ Never auto-edit:
 
 - `AGENTS.md`
 - `.codex/AGENTS.md`
-- `.ai/context`
 - `.claude/CLAUDE.md`
 - `.claude/agents/**`
 - `.claude/rules/**`

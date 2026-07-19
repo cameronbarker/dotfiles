@@ -463,6 +463,8 @@ install_moor() {
     return 0
   fi
 
+  # Under pipefail, a non-matching grep exits 1 and would abort install.sh.
+  # Keep this soft: missing assets should skip moor, not stop the whole install.
   asset_url="$(
     printf '%s\n' "${release_json}" |
       grep -Eo 'https://[^"]+' |
@@ -472,7 +474,7 @@ install_moor() {
       grep -E 'linux|unknown-linux' |
       grep -Ev '\.(sha256|sha256sum|txt|sig)$' |
       head -n 1
-  )"
+  )" || true
   if [[ -z "${asset_url}" ]]; then
     echo "Skipping moor install: no Linux binary asset found for architecture $(uname -m)." >&2
     return 0
@@ -501,9 +503,17 @@ install_moor() {
   chmod a+x "${asset_path}"
 
   if [[ ${#priv[@]} -eq 0 ]]; then
-    mv "${asset_path}" /usr/local/bin/moor
+    if ! mv "${asset_path}" /usr/local/bin/moor; then
+      rm -rf "${work}"
+      echo "Skipping moor install: failed to install /usr/local/bin/moor." >&2
+      return 0
+    fi
   else
-    "${priv[@]}" mv "${asset_path}" /usr/local/bin/moor
+    if ! "${priv[@]}" mv "${asset_path}" /usr/local/bin/moor; then
+      rm -rf "${work}"
+      echo "Skipping moor install: failed to install /usr/local/bin/moor." >&2
+      return 0
+    fi
   fi
   rm -rf "${work}"
   echo "Installed moor to /usr/local/bin/moor"

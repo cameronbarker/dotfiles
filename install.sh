@@ -41,8 +41,17 @@ publish_from_extract_if_needed() {
   fi
 
   local publish_dir="${HOME}/.dotfiles"
+  # Never install from a temp extract when ~/.dotfiles is already a git checkout
+  # (bootstrap --clone, or a manual clone). Continuing would symlink into /tmp and
+  # break after bootstrap cleans up the extract.
   if [[ -d "${publish_dir}/.git" ]]; then
-    return 0
+    if [[ ! -f "${publish_dir}/install.sh" ]]; then
+      echo "error: ${publish_dir} looks like a git checkout but install.sh is missing" >&2
+      exit 1
+    fi
+    echo "Using existing git checkout at ${publish_dir} (skipping archive extract)..."
+    export DOTFILES_SKIP_PUBLISH=1
+    exec bash "${publish_dir}/install.sh" "$@"
   fi
   if [[ "${SCRIPT_DIR}" == "${publish_dir}" ]]; then
     return 0
@@ -188,13 +197,48 @@ ensure_zshrc() {
     echo "Created ${RC_FILE}"
   fi
 
-  if grep -qF "$MARKER" "${RC_FILE}"; then
-    echo "Shell hook already present in ${RC_FILE}"
+  # Keep the managed hook pointed at this SCRIPT_DIR. A prior install from another
+  # root (e.g. ~/Projects/.../Dotfiles) leaves the marker but a stale source path.
+  local tmp found_correct=false changed=false
+  tmp="$(mktemp)"
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    if [[ "$line" == "$MARKER" ]]; then
+      if IFS= read -r next_line || true; then
+        if [[ "$next_line" == "$SOURCE_LINE" ]]; then
+          printf '%s\n' "$line" >>"$tmp"
+          printf '%s\n' "$next_line" >>"$tmp"
+          found_correct=true
+        elif [[ "$next_line" == source\ * ]]; then
+          # Drop stale marker + source from another install root.
+          changed=true
+        else
+          # Orphan marker; drop it and keep the following line.
+          changed=true
+          printf '%s\n' "$next_line" >>"$tmp"
+        fi
+      else
+        changed=true
+      fi
+    else
+      printf '%s\n' "$line" >>"$tmp"
+    fi
+  done <"${RC_FILE}"
+
+  if [[ "$found_correct" != true ]]; then
+    printf '\n%s\n%s\n' "$MARKER" "$SOURCE_LINE" >>"$tmp"
+    changed=true
+  fi
+
+  if [[ "$changed" == true ]]; then
+    mv "$tmp" "${RC_FILE}"
+    if [[ "$found_correct" == true ]]; then
+      echo "Updated source hook in ${RC_FILE}"
+    else
+      echo "Appended source hook to ${RC_FILE}"
+    fi
   else
-    {
-      printf '\n%s\n%s\n' "$MARKER" "$SOURCE_LINE"
-    } >>"${RC_FILE}"
-    echo "Appended source hook to ${RC_FILE}"
+    rm -f "$tmp"
+    echo "Shell hook already present in ${RC_FILE}"
   fi
 }
 
@@ -783,7 +827,8 @@ install_codex_skills() {
     dest="${codex_skills_dest_dir}/${name}"
 
     if [[ -L "${dest}" ]]; then
-      echo "Skip ${dest}: symlink already exists."
+      # Retarget so bootstrap re-runs / SCRIPT_DIR moves stay consistent.
+      ln -sf "${src}" "${dest}"
     elif [[ -e "${dest}" ]]; then
       echo "Skip ${dest}: path exists and is not a symlink."
     else

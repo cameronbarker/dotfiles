@@ -208,7 +208,7 @@ call plug#begin('~/.vim/plugged')
 Plug 'nvim-telescope/telescope.nvim'
 Plug 'nvim-lua/plenary.nvim'
 
-" -- Syntax / treesitter (needs Neovim 0.10+)
+" -- Syntax / treesitter (current plugin rewrite needs Neovim 0.12+)
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
 
 " -- LSP
@@ -231,11 +231,17 @@ Plug 'catppuccin/nvim', { 'as': 'catppuccin' }
 call plug#end()
 
 lua << EOF
-local ok, configs = pcall(require, 'nvim-treesitter.configs')
+-- nvim-treesitter rewrite: highlight/indent are Neovim builtins + queries,
+-- not the old require('nvim-treesitter.configs') API.
+local ok, ts = pcall(require, 'nvim-treesitter')
 if ok then
-  configs.setup({
-    highlight = { enable = true },
-    indent = { enable = true },
+  ts.setup({})
+  vim.api.nvim_create_autocmd('FileType', {
+    callback = function(args)
+      pcall(vim.treesitter.start)
+      -- Experimental treesitter indent (see nvim-treesitter README)
+      vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+    end,
   })
 end
 EOF

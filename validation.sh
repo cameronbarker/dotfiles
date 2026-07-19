@@ -10,6 +10,7 @@ EXPECT_TAILSCALE=true
 EXPECT_NVIM_APPIMAGE=true
 EXPECT_APT=true
 EXPECT_PLUG=true
+EXPECT_RUNTIME=true
 
 for arg in "$@"; do
   case "$arg" in
@@ -19,6 +20,7 @@ for arg in "$@"; do
     --no-nvim-appimage) EXPECT_NVIM_APPIMAGE=false ;;
     --no-apt) EXPECT_APT=false ;;
     --no-plug-install) EXPECT_PLUG=false ;;
+    --no-runtime) EXPECT_RUNTIME=false ;;
     -h|--help)
       cat <<EOF
 Usage: $0 [options]
@@ -32,12 +34,13 @@ Options (match install.sh skips):
   --no-nvim-appimage    Do not require /opt/nvim (any nvim in PATH is OK)
   --no-apt              Soft-warn missing Debian apt packages instead of fail
   --no-plug-install     Skip vim-plug / plugged plugin checks
+  --no-runtime          Skip shell, Starship, and Neovim runtime checks
 EOF
       exit 0
       ;;
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: $0 [--git] [--no-atuin] [--no-tailscale] [--no-nvim-appimage] [--no-apt] [--no-plug-install]" >&2
+      echo "Usage: $0 [--git] [--no-atuin] [--no-tailscale] [--no-nvim-appimage] [--no-apt] [--no-plug-install] [--no-runtime]" >&2
       exit 1
       ;;
   esac
@@ -45,6 +48,8 @@ done
 
 MARKER='# pb-configs dotfiles'
 NVIM_PATH_MARKER='# pb-configs: Neovim AppImage on PATH'
+# shellcheck disable=SC2016 # PATH must remain literal when matched in .zshrc.
+NVIM_PATH_LINE='export PATH="/opt/nvim/usr/bin:$PATH"'
 SOURCE_LINE="source \"${SCRIPT_DIR}/.terminal\""
 OS="$(uname -s)"
 IS_DEBIAN=false
@@ -251,7 +256,7 @@ if [[ "${OS}" == Linux ]]; then
       fail "Neovim AppImage extract missing (/opt/nvim/usr/bin/nvim)"
     fi
     if [[ -f "${RC_FILE}" ]] && grep -qF "${NVIM_PATH_MARKER}" "${RC_FILE}" && \
-      grep -qF 'export PATH="/opt/nvim/usr/bin:$PATH"' "${RC_FILE}"; then
+      grep -qF "${NVIM_PATH_LINE}" "${RC_FILE}"; then
       ok "$HOME/.zshrc Neovim PATH marker (/opt/nvim/usr/bin)"
     elif [[ -f "${RC_FILE}" ]] && grep -qF "${NVIM_PATH_MARKER}" "${RC_FILE}"; then
       warn "$HOME/.zshrc has Neovim PATH marker but not export PATH=\"/opt/nvim/usr/bin:\$PATH\""
@@ -363,6 +368,111 @@ fi
 
 if [[ "${IS_DEBIAN}" == true ]] && [[ "${WITH_GIT}" == true ]]; then
   check_cmd secret-tool warn
+fi
+
+# --- Runtime checks ---
+section "Runtime"
+
+if [[ "${EXPECT_RUNTIME}" != true ]]; then
+  skip "Runtime checks (--no-runtime)"
+else
+  if command -v zsh >/dev/null 2>&1; then
+    if shell_runtime_output="$(
+      TERM=xterm-256color zsh -dfc '
+        source "$1/.terminal" || exit 1
+
+        [[ "${STARSHIP_CONFIG:-}" == "${HOME}/.config/starship.toml" ]] || {
+          print -u2 "STARSHIP_CONFIG was not initialized correctly"
+          exit 1
+        }
+        (( ${+aliases[vim]} )) || {
+          print -u2 "vim alias was not initialized"
+          exit 1
+        }
+        (( ${+functions[pb]} )) || {
+          print -u2 "pb function was not initialized"
+          exit 1
+        }
+
+        if command -v starship >/dev/null 2>&1; then
+          (( ${+functions[prompt_starship_precmd]} )) || {
+            print -u2 "Starship precmd hook was not initialized"
+            exit 1
+          }
+          (( ${precmd_functions[(I)prompt_starship_precmd]} )) || {
+            print -u2 "Starship precmd hook was not registered"
+            exit 1
+          }
+        fi
+
+        if [[ "$2" == true ]] && command -v atuin >/dev/null 2>&1; then
+          (( ${+widgets[atuin-search]} )) || {
+            print -u2 "Atuin search widget was not initialized"
+            exit 1
+          }
+        fi
+
+        if [[ -f "${HOME}/.zsh-z/zsh-z.plugin.zsh" ]]; then
+          (( ${+functions[zshz]} )) || {
+            print -u2 "zsh-z function was not initialized"
+            exit 1
+          }
+        fi
+      ' _ "${SCRIPT_DIR}" "${EXPECT_ATUIN}" 2>&1
+    )"; then
+      ok "zsh runtime: .terminal loaded aliases, functions, and integrations"
+    else
+      fail "zsh runtime initialization failed: ${shell_runtime_output:-unknown error}"
+    fi
+  else
+    fail "zsh runtime: zsh not found"
+  fi
+
+  if command -v starship >/dev/null 2>&1; then
+    if starship_runtime_output="$(
+      STARSHIP_CONFIG="${HOME}/.config/starship.toml" \
+        TERM=xterm-256color \
+        starship prompt --path "${SCRIPT_DIR}" --status 0 2>&1 >/dev/null
+    )"; then
+      ok "Starship runtime: configuration rendered successfully"
+    else
+      fail "Starship runtime failed: ${starship_runtime_output:-configuration could not render}"
+    fi
+  else
+    skip "Starship runtime: binary unavailable"
+  fi
+
+  if command -v nvim >/dev/null 2>&1 || [[ -x /opt/nvim/usr/bin/nvim ]]; then
+    nvim_bin="$(command -v nvim 2>/dev/null || printf '/opt/nvim/usr/bin/nvim')"
+    nvim_version="$("${nvim_bin}" --version | awk 'NR == 1 { sub(/^NVIM v/, ""); print; exit }')"
+    nvim_major="${nvim_version%%.*}"
+    nvim_minor="${nvim_version#*.}"
+    nvim_minor="${nvim_minor%%.*}"
+    if [[ "${nvim_major}" =~ ^[0-9]+$ ]] && [[ "${nvim_minor}" =~ ^[0-9]+$ ]] && \
+      (( nvim_major > 0 || nvim_minor >= 12 )); then
+      ok "Neovim runtime version: ${nvim_version} (0.12+ for treesitter rewrite)"
+    else
+      fail "Neovim ${nvim_version:-unknown} is too old; nvim-treesitter rewrite requires 0.12+"
+    fi
+
+    if [[ "${EXPECT_PLUG}" != true ]]; then
+      skip "Neovim plugin runtime (--no-plug-install)"
+    else
+      if nvim_runtime_output="$(
+        "${nvim_bin}" --headless -u "${HOME}/.config/nvim/init.vim" \
+          -c 'lua local modules = {"telescope", "plenary", "nvim-treesitter", "lspconfig", "cmp", "cmp_nvim_lsp", "gitsigns", "lualine", "catppuccin"}; local missing = {}; for _, module in ipairs(modules) do local loaded = pcall(require, module); if not loaded then table.insert(missing, module) end end; if vim.fn.exists(":Git") ~= 2 then table.insert(missing, "vim-fugitive (:Git)") end; if #missing > 0 then vim.g.pb_validation_error = "plugins failed to load: " .. table.concat(missing, ", ") end' \
+          -c 'if exists("g:pb_validation_error") | echoerr g:pb_validation_error | cquit | endif' \
+          -c 'qa!' 2>&1
+      )"; then
+        ok "Neovim runtime: config and all declared plugins loaded"
+      else
+        nvim_runtime_output="$(printf '%s' "${nvim_runtime_output}" | tr '\n' ' ')"
+        fail "Neovim runtime failed: ${nvim_runtime_output:-config or plugin load error}"
+      fi
+    fi
+  else
+    skip "Neovim runtime: binary unavailable"
+  fi
 fi
 
 # --- Summary ---

@@ -4,7 +4,7 @@
 alias sc='systemctl'
 
 # list services and the name to pass to sc (e.g. sc status nginx)
-# default: running and failed; scl -a for all loaded units
+# default: running, exited, and failed; scl -a for all loaded units
 # shellcheck disable=SC2034
 PB_DESC_scl="list systemd services with sc status commands"
 scl() {
@@ -21,7 +21,7 @@ scl() {
       cmd+=(--all)
       ;;
     *)
-      cmd+=(--state=running,failed)
+      cmd+=(--state=running,exited,failed)
       ;;
   esac
 

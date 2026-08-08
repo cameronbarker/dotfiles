@@ -25,5 +25,14 @@
         ]
       }
     ]
-  }
+  },
+  "extraKnownMarketplaces": {
+    "jszmajda-lid": {
+      "source": {
+        "source": "github",
+        "repo": "jszmajda/lid"
+      }
+    }
+  },
+  "tui": "fullscreen"
 }

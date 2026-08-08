@@ -275,7 +275,7 @@ install_apt_packages() {
   # xclip, wl-clipboard — clipboard for cwd alias (X11 and Wayland)
   # git, curl — vim-plug and :PlugInstall clone plugins
   # neovim from apt only with --no-nvim-appimage (default is extracted AppImage on Linux)
-  local packages=(bat fzf ripgrep zoxide screen tmux unzip xclip wl-clipboard git curl zsh rsync jq gawk)
+  local packages=(bat fzf ripgrep zoxide screen tmux unzip xclip wl-clipboard git curl zsh rsync jq gawk unattended-upgrades)
   if [[ "$NVIM_APPIMAGE" != true ]]; then
     packages=(neovim "${packages[@]}")
   fi
@@ -295,6 +295,47 @@ install_apt_packages() {
     DEBIAN_FRONTEND=noninteractive apt-get install -y "${packages[@]}"
   else
     "${priv[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y "${packages[@]}"
+  fi
+}
+
+enable_unattended_upgrades() {
+  if [[ "$NO_APT" == true ]]; then
+    return 0
+  fi
+  if [[ ! -f /etc/debian_version ]]; then
+    return 0
+  fi
+  if ! command -v systemctl &>/dev/null; then
+    echo "Skipping unattended-upgrades service enable: systemctl not found." >&2
+    return 0
+  fi
+
+  local -a priv=()
+  if [[ "$(id -u)" -eq 0 ]]; then
+    priv=()
+  elif command -v sudo &>/dev/null; then
+    priv=(sudo)
+  else
+    echo "Skipping unattended-upgrades service enable: not root and sudo not found." >&2
+    return 0
+  fi
+
+  if systemctl list-unit-files unattended-upgrades.service 2>/dev/null \
+    | awk '$1 == "unattended-upgrades.service" { found = 1 } END { exit(found ? 0 : 1) }'; then
+    echo "Enabling unattended-upgrades.service..."
+    if ! "${priv[@]}" systemctl enable --now unattended-upgrades.service; then
+      echo "Skipping unattended-upgrades.service enable: systemctl failed." >&2
+    fi
+  else
+    echo "Skipping unattended-upgrades.service enable: unit not found." >&2
+  fi
+
+  if systemctl list-unit-files apt-daily-upgrade.timer 2>/dev/null \
+    | awk '$1 == "apt-daily-upgrade.timer" { found = 1 } END { exit(found ? 0 : 1) }'; then
+    echo "Enabling apt-daily-upgrade.timer..."
+    if ! "${priv[@]}" systemctl enable --now apt-daily-upgrade.timer; then
+      echo "Skipping apt-daily-upgrade.timer enable: systemctl failed." >&2
+    fi
   fi
 }
 
@@ -430,6 +471,7 @@ install_nvim_appimage() {
 }
 
 install_apt_packages
+enable_unattended_upgrades
 install_zsh
 ensure_zshrc
 ensure_local_bin

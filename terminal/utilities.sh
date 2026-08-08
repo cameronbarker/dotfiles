@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------------
 
 export AI_CLI="${AI_CLI:-codex}"
+PB_DOTFILES_DIR="${PB_DOTFILES_DIR:-${_PB_TERMINAL_DIR:-}}"
 # shellcheck disable=SC2034
 PB_DESC_ai="run the configured AI CLI"
 ai() { command "${AI_CLI}" "$@"; }
@@ -65,7 +66,7 @@ pb() {
   esac
 
   {
-    printf "%-12s - %s\n" "pb update" "download and run bootstrap.sh from main"
+    printf "%-12s - %s\n" "pb update" "update dotfiles from git checkout or bootstrap"
 
     for name in \
       pb ai \
@@ -94,12 +95,31 @@ pb() {
   fi
 }
 
-# download the latest bootstrap script and run the installer
+# update the dotfiles checkout when present, otherwise run the remote bootstrap installer
 # shellcheck disable=SC2034
-PB_DESC_pb_update="download and run bootstrap.sh from main"
+PB_DESC_pb_update="update dotfiles from git checkout or bootstrap"
 pb_update() {
   local -a update_args=("$@")
+  local checkout
   local url="https://raw.githubusercontent.com/cameronbarker/dotfiles/main/bootstrap.sh"
+
+  for checkout in "${PB_DOTFILES_DIR}" "${HOME}/.dotfiles"; do
+    [ -n "${checkout}" ] || continue
+    if [ -d "${checkout}/.git" ]; then
+      if ! command -v git >/dev/null 2>&1; then
+        echo "pb update: git is required to update ${checkout}" >&2
+        return 1
+      fi
+      if [ ! -x "${checkout}/install.sh" ]; then
+        echo "pb update: ${checkout}/install.sh is not executable" >&2
+        return 1
+      fi
+
+      git -C "${checkout}" pull origin main
+      "${checkout}/install.sh" "${update_args[@]}"
+      return
+    fi
+  done
 
   if ! command -v curl >/dev/null 2>&1; then
     echo "pb update: curl is required" >&2

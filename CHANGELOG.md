@@ -12,7 +12,7 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0
 - Codex skills under [`.codex/skills/`](.codex/skills/): `maintain-agent-config`, `maintain-project-docs`, `plan-and-commit-work`, `0-maintain-project-workflow` (orchestration).
 - **zsh-z** — optional install to `~/.zsh-z` with `./install.sh --zsh` when missing; [`.terminal`](.terminal) prefers zsh-z on zsh, then zoxide, then rupa/z.
 - Shell helper **`ai()`** — runs Codex CLI by default (`AI_CLI`, default `codex`) from [`.terminal`](.terminal).
-- Shell helper **`pb update`** — downloads and runs the current [`bootstrap.sh`](bootstrap.sh) from `main`.
+- Shell helper **`pb update`** — updates a cloned `~/.dotfiles` checkout with `git pull origin main`, or falls back to the current [`bootstrap.sh`](bootstrap.sh) from `main`.
 
 ### Changed
 

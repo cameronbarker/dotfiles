@@ -24,7 +24,7 @@ After the shell helpers are installed, run the same bootstrap update through:
 pb update
 ```
 
-Bootstrap flags are passed through, for example `pb update --clone`.
+If the sourced dotfiles directory, or `~/.dotfiles`, is a git checkout, `pb update` runs `git -C <checkout> pull origin main` and then `<checkout>/install.sh`. Otherwise it falls back to the bootstrap one-liner above. Flags are passed to whichever path runs, for example `pb update --no-apt --no-atuin` for `install.sh`, or `pb update --clone` for the bootstrap fallback.
 
 ### b) Safer install from a tag with SHA-256
 

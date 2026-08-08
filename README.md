@@ -18,6 +18,14 @@ Same pattern as `curl -fsSL https://chatgpt.com/codex/install.sh | sh`: the scri
 
 Proxmox / root: same command (bootstrap uses `apt-get` directly when uid 0).
 
+After the shell helpers are installed, run the same bootstrap update through:
+
+```sh
+pb update
+```
+
+Bootstrap flags are passed through, for example `pb update --clone`.
+
 ### b) Safer install from a tag with SHA-256
 
 Compute the digest once on a trusted machine, then install with the same ref and hash:

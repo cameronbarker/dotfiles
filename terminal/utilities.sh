@@ -57,9 +57,16 @@ pb() {
       scaffold --list
       return
       ;;
+    update)
+      shift
+      pb_update "$@"
+      return
+      ;;
   esac
 
   {
+    printf "%-12s - %s\n" "pb update" "download and run bootstrap.sh from main"
+
     for name in \
       pb ai \
       mkcd extract serve ff port scaffold gca scl scj \
@@ -85,6 +92,24 @@ pb() {
   else
     cat
   fi
+}
+
+# download the latest bootstrap script and run the installer
+# shellcheck disable=SC2034
+PB_DESC_pb_update="download and run bootstrap.sh from main"
+pb_update() {
+  local -a update_args=("$@")
+  local url="https://raw.githubusercontent.com/cameronbarker/dotfiles/main/bootstrap.sh"
+
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "pb update: curl is required" >&2
+    return 1
+  fi
+
+  (
+    set -o pipefail
+    curl -fsSL "${url}" | bash -s -- "${update_args[@]}"
+  )
 }
 
 # make a directory and cd into it

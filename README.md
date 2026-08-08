@@ -32,7 +32,7 @@ Install known external tools by short name:
 pb install ai
 ```
 
-`pb install ai` and `pb install codex` run the Codex CLI installer from `https://chatgpt.com/codex/install.sh`, then remind you to run `ai login --device-auth`. Run `pb install` to list available installers.
+`pb install ai` and `pb install codex` run the Codex CLI installer from `https://chatgpt.com/codex/install.sh`, then remind you to run `ai login --device-auth`. `pb install tailscale` runs the Tailscale installer from `https://tailscale.com/install.sh`, then reminds you to run `tailscale up`. Run `pb install` to list available installers.
 
 ### b) Safer install from a tag with SHA-256
 

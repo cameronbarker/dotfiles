@@ -150,6 +150,7 @@ pb_install() {
 Available installers:
   ai      - Codex CLI
   codex   - Codex CLI
+  tailscale - Tailscale
 EOF
     return 0
   fi
@@ -170,6 +171,19 @@ EOF
       ) || return
 
       echo "Codex installed. Next run: ai login --device-auth"
+      ;;
+    tailscale)
+      if ! command -v curl >/dev/null 2>&1; then
+        echo "pb install ${name}: curl is required" >&2
+        return 1
+      fi
+
+      (
+        set -o pipefail
+        curl -fsSL https://tailscale.com/install.sh | sh -s -- "${install_args[@]}"
+      ) || return
+
+      echo "Tailscale installed. Next run: tailscale up"
       ;;
     *)
       echo "pb install: unknown installer '${name}'" >&2

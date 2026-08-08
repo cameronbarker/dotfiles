@@ -26,6 +26,14 @@ pb update
 
 If the sourced dotfiles directory, or `~/.dotfiles`, is a git checkout, `pb update` runs `git -C <checkout> pull origin main` and then `<checkout>/install.sh`. Otherwise it falls back to the bootstrap one-liner above. Flags are passed to whichever path runs, for example `pb update --no-apt --no-atuin` for `install.sh`, or `pb update --clone` for the bootstrap fallback.
 
+Install known external tools by short name:
+
+```sh
+pb install ai
+```
+
+`pb install ai` and `pb install codex` run the Codex CLI installer from `https://chatgpt.com/codex/install.sh`, then remind you to run `ai login --device-auth`. Run `pb install` to list available installers.
+
 ### b) Safer install from a tag with SHA-256
 
 Compute the digest once on a trusted machine, then install with the same ref and hash:

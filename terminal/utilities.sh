@@ -63,10 +63,16 @@ pb() {
       pb_update "$@"
       return
       ;;
+    install)
+      shift
+      pb_install "$@"
+      return
+      ;;
   esac
 
   {
     printf "%-12s - %s\n" "pb update" "update dotfiles from git checkout or bootstrap"
+    printf "%-12s - %s\n" "pb install" "install known tools by name"
 
     for name in \
       pb ai \
@@ -130,6 +136,47 @@ pb_update() {
     set -o pipefail
     curl -fsSL "${url}" | bash -s -- "${update_args[@]}"
   )
+}
+
+# install known external tools by short name
+# shellcheck disable=SC2034
+PB_DESC_pb_install="install known tools by name"
+pb_install() {
+  local -a install_args=()
+  local name="${1:-}"
+
+  if [ -z "${name}" ]; then
+    cat <<'EOF'
+Available installers:
+  ai      - Codex CLI
+  codex   - Codex CLI
+EOF
+    return 0
+  fi
+
+  shift
+  install_args=("$@")
+
+  case "${name}" in
+    ai|codex)
+      if ! command -v curl >/dev/null 2>&1; then
+        echo "pb install ${name}: curl is required" >&2
+        return 1
+      fi
+
+      (
+        set -o pipefail
+        curl -fsSL https://chatgpt.com/codex/install.sh | sh -s -- "${install_args[@]}"
+      ) || return
+
+      echo "Codex installed. Next run: ai login --device-auth"
+      ;;
+    *)
+      echo "pb install: unknown installer '${name}'" >&2
+      echo "Run 'pb install' to list available installers." >&2
+      return 1
+      ;;
+  esac
 }
 
 # make a directory and cd into it

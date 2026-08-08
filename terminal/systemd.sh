@@ -4,7 +4,7 @@
 alias sc='systemctl'
 
 # list services and the name to pass to sc (e.g. sc status nginx)
-# default: running, exited, and failed; scl -a for all loaded units
+# default: running, failed, and container-style exited services; scl -a for all loaded units
 # shellcheck disable=SC2034
 PB_DESC_scl="list systemd services with sc status commands"
 scl() {
@@ -29,7 +29,14 @@ scl() {
     | awk '
       $1 ~ /\.service$/ {
         full = $1
-        state = $3
+        state = $4
+        description = ""
+        for (i = 5; i <= NF; i++) {
+          description = description (description == "" ? "" : " ") $i
+        }
+        if (state == "exited" && description !~ /(podman|podman-compose|docker|compose|container)/) {
+          next
+        }
         name = full
         sub(/\.service$/, "", name)
         printf "%-32s %-10s  sc status %s\n", full, state, name

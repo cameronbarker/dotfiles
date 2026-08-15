@@ -13,11 +13,5 @@ alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 
-# -----------------------------------------------------------------------------
-# Discovery
-# -----------------------------------------------------------------------------
-alias aliases='alias'
-
-
 alias hosts='less /etc/hosts'
 alias ehosts='edit /etc/hosts'

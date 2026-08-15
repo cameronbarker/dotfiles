@@ -44,6 +44,7 @@ _pb_help_records() {
 
   printf "%s\t%s\t%s\n" "PB Toolkit" "pb update" "${PB_DESC_pb_update:-update dotfiles from git checkout or bootstrap}"
   printf "%s\t%s\t%s\n" "PB Toolkit" "pb install" "${PB_DESC_pb_install:-install known tools by name}"
+  printf "%s\t%s\t%s\n" "PB Toolkit" "pb aliases" "${PB_DESC_pb_aliases:-list installed shell aliases}"
   printf "%s\t%s\t%s\n" "PB Toolkit" "pb rm_screenshots" "delete screenshots from the Desktop"
 
   for name in \
@@ -75,6 +76,72 @@ _pb_help_records() {
   done
 }
 
+_pb_alias_record() {
+  local category name description
+  category="$1"
+  name="$2"
+  description="$3"
+
+  alias "${name}" >/dev/null 2>&1 || return 0
+  printf "%s\t%s\t%s\n" "${category}" "${name}" "${description}"
+}
+
+_pb_alias_records() {
+  _pb_alias_record "Terminal" "c" "clear"
+  _pb_alias_record "Terminal" "src" "reload the active shell rc file"
+
+  _pb_alias_record "Editor" "vim" "nvim"
+  _pb_alias_record "Editor" "edit" "${EDITOR:-vim}"
+  _pb_alias_record "Editor" "ide" "${IDE:-cursor}"
+
+  _pb_alias_record "Files & Directories" "ll" "ls -CF --color=auto"
+  _pb_alias_record "Files & Directories" "la" "ls -A --color=auto"
+  _pb_alias_record "Files & Directories" "l" "ls -la --color=auto"
+  _pb_alias_record "Files & Directories" "lt" "ls -lAht --color=auto"
+  _pb_alias_record "Files & Directories" "cat" "bat-powered cat when bat is available"
+  _pb_alias_record "Files & Directories" "bat" "batcat on Debian-style systems"
+  _pb_alias_record "Files & Directories" "hosts" "less /etc/hosts"
+  _pb_alias_record "Files & Directories" "ehosts" "edit /etc/hosts"
+
+  _pb_alias_record "Search" "grep" "grep --color=auto"
+  _pb_alias_record "Search" "fgrep" "fgrep --color=auto"
+  _pb_alias_record "Search" "egrep" "egrep --color=auto"
+
+  _pb_alias_record "Navigation" ".." "cd ../"
+  _pb_alias_record "Navigation" "..." "cd ../../"
+  _pb_alias_record "Navigation" "...." "cd ../../../"
+  _pb_alias_record "Navigation" "~" "cd ~"
+  _pb_alias_record "Navigation" "-" "cd -"
+  _pb_alias_record "Navigation" "cwd" "copy the current path to the clipboard"
+
+  _pb_alias_record "Git" "ga" "git add --all"
+  _pb_alias_record "Git" "gb" "git branch"
+  _pb_alias_record "Git" "gc" "git commit -m"
+  _pb_alias_record "Git" "gco" "git checkout"
+  _pb_alias_record "Git" "gcb" "git checkout -b"
+  _pb_alias_record "Git" "gd" "git diff"
+  _pb_alias_record "Git" "gf" "git pull"
+  _pb_alias_record "Git" "gl" "git log --oneline --graph --decorate"
+  _pb_alias_record "Git" "gr" "git remote -v"
+  _pb_alias_record "Git" "gs" "git status"
+  _pb_alias_record "Git" "gt" "git push"
+  _pb_alias_record "Git" "gst" "git stash"
+  _pb_alias_record "Git" "gstp" "git stash pop"
+  _pb_alias_record "Git" "pfo" "git pull origin <current-branch>"
+  _pb_alias_record "Git" "pto" "git push origin <current-branch>"
+
+  _pb_alias_record "Network & Services" "sc" "systemctl"
+
+  _pb_alias_record "Rails" "bi" "bundle install"
+  _pb_alias_record "Rails" "rc" "rails console"
+  _pb_alias_record "Rails" "rs" "rails server"
+  _pb_alias_record "Rails" "rdb" "rails db:migrate"
+  _pb_alias_record "Rails" "rdbs" "rails db:migrate:status"
+  _pb_alias_record "Rails" "rlint" "bundle exec standardrb"
+  _pb_alias_record "Rails" "rails_secrets" "EDITOR=vim rails credentials:edit"
+  _pb_alias_record "Rails" "kill_rails" "stop a Rails server on port 3000"
+}
+
 _pb_filter_help_records() {
   local query
   query="${1:-}"
@@ -86,21 +153,56 @@ _pb_filter_help_records() {
   fi
 }
 
-_pb_render_help() {
-  local query
+_pb_render_aliases() {
+  local accent muted reset warn query records
   query="${1:-}"
+  records="$(_pb_alias_records | _pb_filter_help_records "${query}")"
+
+  if [ -z "${records}" ] && [ -n "${query}" ]; then
+    warn="$(ui_style warn)"
+    accent="$(ui_style accent)"
+    muted="$(ui_style muted)"
+    reset="$(ui_style reset)"
+    printf "%spb aliases:%s no aliases match %s'%s'%s.\n" "${warn}" "${reset}" "${accent}" "${query}" "${reset}" >&2
+    printf "%sRun %spb aliases%s to list installed aliases.%s\n" "${muted}" "${accent}" "${muted}" "${reset}" >&2
+    return 1
+  fi
+
+  printf '%s\n' "${records}" \
+    | ui_help_table \
+        "PB" \
+        "Installed Aliases" \
+        "Shell shortcuts loaded by these dotfiles" \
+        "Tip: \`alias <name>\` shows the exact alias expansion" \
+        "ALIAS" \
+        "alias" \
+        "aliases"
+}
+
+_pb_render_help() {
+  local accent muted reset warn query records
+  query="${1:-}"
+  records="$(_pb_help_records | _pb_filter_help_records "${query}")"
+
+  if [ -z "${records}" ] && [ -n "${query}" ]; then
+    warn="$(ui_style warn)"
+    accent="$(ui_style accent)"
+    muted="$(ui_style muted)"
+    reset="$(ui_style reset)"
+    printf "%spb:%s %s'%s'%s is not available.\n" "${warn}" "${reset}" "${accent}" "${query}" "${reset}" >&2
+    printf "%sRun %spb%s to list available commands.%s\n" "${muted}" "${accent}" "${muted}" "${reset}" >&2
+    return 1
+  fi
 
   if type ui_help_table >/dev/null 2>&1; then
-    _pb_help_records \
-      | _pb_filter_help_records "${query}" \
+    printf '%s\n' "${records}" \
       | ui_help_table \
           "PB" \
           "Dotfiles Toolkit" \
           "Manage, search, and automate your dotfiles" \
           "Tip: \`pb <command> --help\` for command-specific help"
   else
-    _pb_help_records \
-      | _pb_filter_help_records "${query}" \
+    printf '%s\n' "${records}" \
       | while IFS="$(printf '\t')" read -r _category name description; do
           [ -n "${name}" ] || continue
           if [ -n "${description}" ]; then
@@ -141,6 +243,11 @@ pb() {
       fi
 
       scaffold --list
+      return
+      ;;
+    aliases)
+      shift
+      _pb_render_aliases "${1:-}"
       return
       ;;
     update)

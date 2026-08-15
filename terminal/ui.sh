@@ -22,7 +22,7 @@ ui_terminal_width() {
 }
 
 ui_is_tty() {
-  [ -t 1 ]
+  [ -t 1 ] || [ -t 2 ]
 }
 
 ui_supports_color() {
@@ -58,6 +58,11 @@ ui_style() {
       files)  printf '\033[1;96m' ;;
       network) printf '\033[1;92m' ;;
       git)    printf '\033[1;94m' ;;
+      terminal) printf '\033[1;97m' ;;
+      search) printf '\033[1;93m' ;;
+      navigation) printf '\033[1;92m' ;;
+      rails)  printf '\033[1;91m' ;;
+      warn)   printf '\033[1;91m' ;;
       muted)  printf '\033[90m' ;;
       bold)   printf '\033[1m' ;;
       reset)  printf '\033[0m' ;;
@@ -73,6 +78,11 @@ ui_style() {
       files)  { tput bold 2>/dev/null || true; tput setaf 14 2>/dev/null || tput setaf 6 2>/dev/null || printf '\033[1;96m'; } ;;
       network) { tput bold 2>/dev/null || true; tput setaf 10 2>/dev/null || tput setaf 2 2>/dev/null || printf '\033[1;92m'; } ;;
       git)    { tput bold 2>/dev/null || true; tput setaf 12 2>/dev/null || tput setaf 4 2>/dev/null || printf '\033[1;94m'; } ;;
+      terminal) { tput bold 2>/dev/null || true; tput setaf 15 2>/dev/null || tput setaf 7 2>/dev/null || printf '\033[1;97m'; } ;;
+      search) { tput bold 2>/dev/null || true; tput setaf 11 2>/dev/null || tput setaf 3 2>/dev/null || printf '\033[1;93m'; } ;;
+      navigation) { tput bold 2>/dev/null || true; tput setaf 10 2>/dev/null || tput setaf 2 2>/dev/null || printf '\033[1;92m'; } ;;
+      rails)  { tput bold 2>/dev/null || true; tput setaf 9 2>/dev/null || tput setaf 1 2>/dev/null || printf '\033[1;91m'; } ;;
+      warn)   { tput bold 2>/dev/null || true; tput setaf 9 2>/dev/null || tput setaf 1 2>/dev/null || printf '\033[1;91m'; } ;;
       muted)  tput setaf 8 2>/dev/null || tput setaf 7 2>/dev/null || printf '\033[90m' ;;
       bold)   tput bold 2>/dev/null || printf '\033[1m' ;;
       reset)  tput sgr0 2>/dev/null || printf '\033[0m' ;;
@@ -87,6 +97,11 @@ ui_style() {
     files)  printf '\033[1;96m' ;;
     network) printf '\033[1;92m' ;;
     git)    printf '\033[1;94m' ;;
+    terminal) printf '\033[1;97m' ;;
+    search) printf '\033[1;93m' ;;
+    navigation) printf '\033[1;92m' ;;
+    rails)  printf '\033[1;91m' ;;
+    warn)   printf '\033[1;91m' ;;
     muted)  printf '\033[90m' ;;
     bold)   printf '\033[1m' ;;
     reset)  printf '\033[0m' ;;
@@ -100,6 +115,11 @@ _ui_help_category_style() {
     "Files & Directories") ui_style files ;;
     "Network & Services") ui_style network ;;
     "Git") ui_style git ;;
+    "Terminal") ui_style terminal ;;
+    "Editor") ui_style terminal ;;
+    "Search") ui_style search ;;
+    "Navigation") ui_style navigation ;;
+    "Rails") ui_style rails ;;
     *) ui_style accent ;;
   esac
 }
@@ -184,10 +204,11 @@ _ui_help_table_count_records() {
 
 _ui_help_table_compact() {
   local title subtitle records cols command_width description_width accent muted reset bold
-  local category command description heading command_style current_category
+  local category command description heading command_style current_category command_label
   title="$1"
   subtitle="$2"
   records="$3"
+  command_label="$4"
   current_category=""
 
   cols="$(ui_terminal_width)"
@@ -204,7 +225,7 @@ _ui_help_table_compact() {
 
   printf '%s%s%s\n\n' "${accent}" "$(ui_truncate "${heading}" "${cols}")" "${reset}"
   printf '%s' "${muted}"
-  ui_pad_right "COMMAND" "${command_width}"
+  ui_pad_right "${command_label}" "${command_width}"
   printf '  '
   ui_pad_right "DESCRIPTION" "${description_width}"
   printf '%s\n' "${reset}"
@@ -266,7 +287,7 @@ _ui_help_table_print_section() {
 _ui_help_table_tty() {
   local title subtitle description tip records cols panel_width inner_width line_width
   local command_width description_width count border muted reset accent bold
-  local top_rule separator bottom_rule tip_prefix tip_command tip_suffix tip_text count_label
+  local top_rule separator bottom_rule tip_prefix tip_command tip_suffix tip_text count_label count_noun count_plural
   local category command row_description current_category
   local _UI_ASSUME_TTY
   title="$1"
@@ -274,11 +295,14 @@ _ui_help_table_tty() {
   description="$3"
   tip="$4"
   records="$5"
+  command_label="${6:-COMMAND}"
+  count_noun="${7:-command}"
+  count_plural="${8:-${count_noun}s}"
   _UI_ASSUME_TTY=1
 
   cols="$(ui_terminal_width)"
   if [ "${cols}" -lt 72 ]; then
-    _ui_help_table_compact "${title}" "${subtitle}" "${records}"
+    _ui_help_table_compact "${title}" "${subtitle}" "${records}" "${command_label}"
     return 0
   fi
 
@@ -326,7 +350,7 @@ _ui_help_table_tty() {
   printf '%s│%s\n' "${border}" "${reset}"
 
   printf '%s│%s  %s' "${border}" "${reset}" "${muted}"
-  ui_pad_right "COMMAND" "${command_width}"
+  ui_pad_right "${command_label}" "${command_width}"
   printf '  '
   ui_pad_right "DESCRIPTION" "${description_width}"
   ui_repeat ' ' $((line_width - command_width - description_width - 2))
@@ -359,9 +383,9 @@ _ui_help_table_tty() {
   fi
 
   if [ "${count}" -eq 1 ] 2>/dev/null; then
-    count_label="${count} command"
+    count_label="${count} ${count_noun}"
   else
-    count_label="${count} commands"
+    count_label="${count} ${count_plural}"
   fi
 
   printf '%s│%s  %s%s%s%s%s%s' "${border}" "${reset}" "${muted}" "${tip_prefix}" "${reset}" "${accent}" "${tip_command}" "${reset}"
@@ -373,15 +397,18 @@ _ui_help_table_tty() {
 }
 
 ui_help_table() {
-  local title subtitle description tip records
+  local title subtitle description tip command_label count_noun count_plural records
   title="$1"
   subtitle="$2"
   description="$3"
   tip="$4"
+  command_label="${5:-COMMAND}"
+  count_noun="${6:-command}"
+  count_plural="${7:-${count_noun}s}"
   records="$(cat)"
 
   if ui_is_tty; then
-    _ui_help_table_tty "${title}" "${subtitle}" "${description}" "${tip}" "${records}"
+    _ui_help_table_tty "${title}" "${subtitle}" "${description}" "${tip}" "${records}" "${command_label}" "${count_noun}" "${count_plural}"
   else
     printf '%s\n' "${records}" | _ui_help_table_plain
   fi

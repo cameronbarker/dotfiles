@@ -68,11 +68,17 @@ pb() {
       pb_install "$@"
       return
       ;;
+    rm_screenshots)
+      shift
+      _pb_rm_screenshots "$@"
+      return
+      ;;
   esac
 
   {
     printf "%-12s - %s\n" "pb update" "update dotfiles from git checkout or bootstrap"
     printf "%-12s - %s\n" "pb install" "install known tools by name"
+    printf "%-12s - %s\n" "pb rm_screenshots" "delete screenshots from the Desktop"
 
     for name in \
       pb ai \
@@ -218,6 +224,29 @@ extract() {
 # shellcheck disable=SC2034
 PB_DESC_serve="start a Python HTTP server in the current directory"
 serve() { python3 -m http.server "${1:-8000}"; }
+
+_pb_rm_screenshots() {
+  local desktop count
+  desktop="${HOME}/Desktop"
+
+  if [ ! -d "${desktop}" ]; then
+    echo "pb rm_screenshots: ${desktop} does not exist" >&2
+    return 1
+  fi
+
+  count="$(
+    find "${desktop}" -maxdepth 1 -type f \
+      \( -name 'Screenshot *' -o -name 'Screen Shot *' \) \
+      | wc -l
+  )"
+  count="${count##*[!0-9]}"
+
+  find "${desktop}" -maxdepth 1 -type f \
+    \( -name 'Screenshot *' -o -name 'Screen Shot *' \) \
+    -exec rm -f {} +
+
+  echo "Deleted ${count:-0} screenshot(s) from ${desktop}."
+}
 
 # find file by name
 # shellcheck disable=SC2034

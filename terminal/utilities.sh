@@ -8,6 +8,18 @@ PB_DOTFILES_DIR="${PB_DOTFILES_DIR:-${_PB_TERMINAL_DIR:-}}"
 PB_DESC_ai="run the configured AI CLI"
 ai() { command "${AI_CLI}" "$@"; }
 
+unalias size 2>/dev/null || true
+# shellcheck disable=SC2034
+PB_DESC_size="show the human-readable size of files or directories"
+size() {
+  if [ "$#" -eq 0 ]; then
+    echo "Usage: size <file-or-directory> [...]" >&2
+    return 1
+  fi
+
+  command du -sh "$@"
+}
+
 _pb_function_ignored() {
   local name ignored
   name="$1"
@@ -81,7 +93,7 @@ pb() {
     printf "%-12s - %s\n" "pb rm_screenshots" "delete screenshots from the Desktop"
 
     for name in \
-      pb ai \
+      pb ai size \
       mkcd extract serve ff port scaffold gca scl scj \
       tmux_split_v tmux_split_h tmux_kill_pane tmux_zoom_pane \
       tmux_new_window tmux_rename_window \

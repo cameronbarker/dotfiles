@@ -39,10 +39,83 @@ _pb_function_ignored() {
   return 1
 }
 
+_pb_help_records() {
+  local category description name
+
+  printf "%s\t%s\t%s\n" "PB Toolkit" "pb update" "${PB_DESC_pb_update:-update dotfiles from git checkout or bootstrap}"
+  printf "%s\t%s\t%s\n" "PB Toolkit" "pb install" "${PB_DESC_pb_install:-install known tools by name}"
+  printf "%s\t%s\t%s\n" "PB Toolkit" "pb rm_screenshots" "delete screenshots from the Desktop"
+
+  for name in \
+    pb \
+    ai \
+    size mkcd extract ff scaffold \
+    serve port scl scj \
+    gca \
+    tmux_split_v tmux_split_h tmux_kill_pane tmux_zoom_pane \
+    tmux_new_window tmux_rename_window \
+    tmux_focus_left tmux_focus_right tmux_focus_up tmux_focus_down \
+    tmux_resize_left tmux_resize_right tmux_resize_up tmux_resize_down \
+    tmux_list tmux_sessions_pick_or_list tmux_detach \
+    tmux_run_split tmux_test_split tmux_logs_split \
+    tmux_sync_toggle tmux_capture tmux_ctx
+  do
+    _pb_function_ignored "${name}" && continue
+    type "${name}" >/dev/null 2>&1 || continue
+    case "${name}" in
+      pb) category="PB Toolkit" ;;
+      ai) category="AI" ;;
+      size|mkcd|extract|ff|scaffold) category="Files & Directories" ;;
+      serve|port|scl|scj) category="Network & Services" ;;
+      gca) category="Git" ;;
+      *) category="Other" ;;
+    esac
+    eval "description=\${PB_DESC_${name}:-}"
+    printf "%s\t%s\t%s\n" "${category}" "${name}" "${description}"
+  done
+}
+
+_pb_filter_help_records() {
+  local query
+  query="${1:-}"
+
+  if [ -n "${query}" ]; then
+    grep -i -- "${query}" || true
+  else
+    cat
+  fi
+}
+
+_pb_render_help() {
+  local query
+  query="${1:-}"
+
+  if type ui_help_table >/dev/null 2>&1; then
+    _pb_help_records \
+      | _pb_filter_help_records "${query}" \
+      | ui_help_table \
+          "PB" \
+          "Dotfiles Toolkit" \
+          "Manage, search, and automate your dotfiles" \
+          "Tip: \`pb <command> --help\` for command-specific help"
+  else
+    _pb_help_records \
+      | _pb_filter_help_records "${query}" \
+      | while IFS="$(printf '\t')" read -r _category name description; do
+          [ -n "${name}" ] || continue
+          if [ -n "${description}" ]; then
+            printf "%-18s %s\n" "${name}" "${description}"
+          else
+            printf "%s\n" "${name}"
+          fi
+        done
+  fi
+}
+
 # shellcheck disable=SC2034
 PB_DESC_pb="list public dotfiles functions"
 pb() {
-  local description name query
+  local query
   query="${1:-}"
 
   case "${query}" in
@@ -87,36 +160,7 @@ pb() {
       ;;
   esac
 
-  {
-    printf "%-12s - %s\n" "pb update" "update dotfiles from git checkout or bootstrap"
-    printf "%-12s - %s\n" "pb install" "install known tools by name"
-    printf "%-12s - %s\n" "pb rm_screenshots" "delete screenshots from the Desktop"
-
-    for name in \
-      pb ai size \
-      mkcd extract serve ff port scaffold gca scl scj \
-      tmux_split_v tmux_split_h tmux_kill_pane tmux_zoom_pane \
-      tmux_new_window tmux_rename_window \
-      tmux_focus_left tmux_focus_right tmux_focus_up tmux_focus_down \
-      tmux_resize_left tmux_resize_right tmux_resize_up tmux_resize_down \
-      tmux_list tmux_sessions_pick_or_list tmux_detach \
-      tmux_run_split tmux_test_split tmux_logs_split \
-      tmux_sync_toggle tmux_capture tmux_ctx
-    do
-      _pb_function_ignored "${name}" && continue
-      type "${name}" >/dev/null 2>&1 || continue
-      eval "description=\${PB_DESC_${name}:-}"
-      if [ -n "${description}" ]; then
-        printf "%-12s - %s\n" "${name}" "${description}"
-      else
-        printf "%s\n" "${name}"
-      fi
-    done
-  } | if [ -n "${query}" ]; then
-    grep -i -- "${query}" || true
-  else
-    cat
-  fi
+  _pb_render_help "${query}"
 }
 
 # update the dotfiles checkout when present, otherwise run the remote bootstrap installer

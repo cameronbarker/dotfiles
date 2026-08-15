@@ -32,6 +32,8 @@ fi
 source "${_PB_TERMINAL_DIR}/terminal/zsh-cleanup.sh"
 # shellcheck source=terminal/core.sh
 source "${_PB_TERMINAL_DIR}/terminal/core.sh"
+# shellcheck source=terminal/ui.sh
+source "${_PB_TERMINAL_DIR}/terminal/ui.sh"
 # shellcheck source=terminal/navigation.sh
 source "${_PB_TERMINAL_DIR}/terminal/navigation.sh"
 # shellcheck source=terminal/tmux.sh

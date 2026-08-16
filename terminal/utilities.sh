@@ -112,6 +112,7 @@ _pb_alias_records() {
   _pb_alias_record "Navigation" "...." "cd ../../../"
   _pb_alias_record "Navigation" "~" "cd ~"
   _pb_alias_record "Navigation" "-" "cd -"
+  _pb_alias_record "Navigation" "copy" "copy piped input or arguments to the clipboard"
   _pb_alias_record "Navigation" "cwd" "copy the current path to the clipboard"
 
   _pb_alias_record "Git" "ga" "git add --all"

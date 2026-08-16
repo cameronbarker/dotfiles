@@ -13,7 +13,7 @@ Keep new files close to their owning concern and prefer extending existing scrip
 Primary workflow is script-driven:
 - `./install.sh` installs/symlinks managed dotfiles and shell hooks
 - `./install.sh --git` links Git config and keeps shell setup zsh-only
-- `./install.sh --no-apt --no-atuin --no-tailscale` skips package-manager, Atuin, and Tailscale setup
+- `./install.sh --no-apt --no-atuin` skips package-manager and Atuin setup
 - `./uninstall.sh --git --nvim-appimage --atuin` removes managed links and optional installed components
 - `nvim +PlugInstall +qall` installs Neovim plugins after setup
 

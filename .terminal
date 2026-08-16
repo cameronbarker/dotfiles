@@ -9,8 +9,8 @@
 #        Starship (prompt):   curl -sS https://starship.rs/install.sh | sh
 #        Atuin (history):     default via ./install.sh (binary only; do not use setup.atuin.sh — it duplicates hooks)
 #                             or: brew install atuin
-#        Tailscale (VPN):     default via ./install.sh (client only; run tailscale up per machine — no auth keys in repo)
-#                             or: brew install tailscale  /  curl -fsSL https://tailscale.com/install.sh | sh
+#        Tailscale (VPN):     pb install tailscale  (then run tailscale up per machine — no auth keys in repo)
+#                             or: brew install tailscale
 #        fzf (fuzzy finder):  git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install
 #        zoxide (dirs):       apt install zoxide  (default via ./install.sh) — or brew install zoxide
 #        zsh-z (zsh dirs):    git clone --depth 1 https://github.com/agkozak/zsh-z ~/.zsh-z

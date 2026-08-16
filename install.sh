@@ -9,8 +9,6 @@ NO_APT=false
 NVIM_APPIMAGE=true
 # Atuin shell history binary; hooks live in .terminal, not duplicated in rc.
 ATUIN_INSTALL=true
-# Tailscale VPN client only; authenticate per machine with: tailscale up
-TAILSCALE_INSTALL=true
 # vim-plug plugins via headless Neovim (needs git + network on first run).
 NVIM_PLUG_INSTALL=true
 
@@ -21,11 +19,10 @@ for arg in "$@"; do
     --no-nvim-appimage) NVIM_APPIMAGE=false ;;
     --nvim-appimage) ;; # default; kept for old scripts / docs
     --no-atuin) ATUIN_INSTALL=false ;;
-    --no-tailscale) TAILSCALE_INSTALL=false ;;
     --no-plug-install) NVIM_PLUG_INSTALL=false ;;
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: $0 [--git] [--no-apt] [--no-nvim-appimage] [--no-plug-install] [--no-atuin] [--no-tailscale]" >&2
+      echo "Usage: $0 [--git] [--no-apt] [--no-nvim-appimage] [--no-plug-install] [--no-atuin]" >&2
       exit 1
       ;;
   esac
@@ -723,80 +720,10 @@ install_atuin() {
   fi
 }
 
-install_tailscale() {
-  [[ "$TAILSCALE_INSTALL" == true ]] || return 0
-  if command -v tailscale &>/dev/null; then
-    echo "Tailscale already available: $(command -v tailscale)"
-    return 0
-  fi
-
-  if [[ "$(uname -s)" == Darwin ]] && command -v brew &>/dev/null; then
-    echo "Installing Tailscale via Homebrew (authenticate per machine: tailscale up)"
-    if ! brew install tailscale; then
-      echo "Tailscale install failed." >&2
-      return 0
-    fi
-    if command -v tailscale &>/dev/null; then
-      echo "Tailscale installed: $(command -v tailscale) — run: tailscale up"
-    else
-      echo "Tailscale install finished but tailscale not in PATH." >&2
-    fi
-    return 0
-  fi
-
-  if [[ "$(uname -s)" != Linux ]]; then
-    echo "Skipping Tailscale: unsupported platform (install manually)." >&2
-    return 0
-  fi
-
-  if ! command -v curl &>/dev/null; then
-    echo "Skipping Tailscale: curl not found." >&2
-    return 0
-  fi
-
-  # Run the official installer as root (not curl | sh) so sudo can prompt if needed.
-  local -a priv=()
-  if [[ "$(id -u)" -eq 0 ]]; then
-    priv=()
-  elif command -v sudo &>/dev/null; then
-    priv=(sudo)
-  else
-    echo "Skipping Tailscale: not root and sudo not found." >&2
-    return 0
-  fi
-
-  local installer
-  installer="$(mktemp)"
-  trap "rm -f '${installer}'" RETURN
-
-  echo "Installing Tailscale via tailscale.com/install.sh (authenticate per machine: tailscale up)"
-  if ! curl --proto '=https' --tlsv1.2 -fsSL -o "${installer}" https://tailscale.com/install.sh; then
-    echo "Tailscale: failed to download installer." >&2
-    return 0
-  fi
-
-  if ! "${priv[@]}" sh "${installer}"; then
-    echo "Tailscale installer failed (check sudo, network, and /etc/os-release)." >&2
-    return 0
-  fi
-
-  if command -v tailscale &>/dev/null; then
-    echo "Tailscale installed: $(command -v tailscale)"
-    if [[ ${#priv[@]} -eq 0 ]]; then
-      echo "Authenticate: tailscale up"
-    else
-      echo "Authenticate: sudo tailscale up"
-    fi
-  else
-    echo "Tailscale installer finished but 'tailscale' not in PATH; try: sudo tailscale version" >&2
-  fi
-}
-
 strip_rc_blocks "${BASH_RC_FILE}"
 set_login_shell_to_zsh
 install_zsh_z
 install_atuin
-install_tailscale
 
 install_claude_config() {
   local claude_src="${SCRIPT_DIR}/.claude"

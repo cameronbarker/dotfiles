@@ -6,9 +6,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WITH_GIT=false
 NO_APT=false
 # On Linux, Neovim comes from the official extracted AppImage under /opt/nvim (no FUSE).
-NVIM_APPIMAGE=true
+NVIM_APPIMAGE=false
 # Atuin shell history binary; hooks live in .terminal, not duplicated in rc.
-ATUIN_INSTALL=true
+ATUIN_INSTALL=false
 # vim-plug plugins via headless Neovim (needs git + network on first run).
 NVIM_PLUG_INSTALL=true
 

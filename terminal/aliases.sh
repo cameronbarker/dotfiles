@@ -15,3 +15,8 @@ alias egrep='egrep --color=auto'
 
 alias hosts='less /etc/hosts'
 alias ehosts='edit /etc/hosts'
+
+# -----------------------------------------------------------------------------
+# Tailscale
+# -----------------------------------------------------------------------------
+alias tsfiles='ls -lAht /var/lib/tailscale/files/'
